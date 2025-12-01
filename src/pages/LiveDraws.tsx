@@ -100,15 +100,15 @@ export function LiveDraws() {
                     </div>
                     <CountdownTimer endDate={liveDraw.drawDate} />
                   </div>
-                  {/* {liveDraw.videoUrl && (
+                  {liveDraw.videoUrl && (
                     <button
                       className="w-full btn-premium flex items-center justify-center"
-                      onClick={() => navigate(`/live-draw/${liveDraw.id}`)}
+                      onClick={() => window.open(liveDraw.videoUrl, '_blank')}
                     >
                       <ClockIcon className="w-5 h-5 mr-2" />
-                      Set Reminder
+                      Watch Live Draw
                     </button>
-                  )} */}
+                  )}
                 </div>
               </div>
             </motion.div>

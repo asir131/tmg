@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { SearchIcon, FilterIcon, GridIcon, ListIcon } from 'lucide-react';
+import { SearchIcon, GridIcon, ListIcon } from 'lucide-react';
 import { CompetitionCard } from '../components/CompetitionCard';
-import { useGetCompetitionsQuery } from '../store/api/competitionsApi';
+import { useGetCompetitionsQuery, useGetCategoriesQuery } from '../store/api/competitionsApi';
 
 export function AllCompetitions() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -11,27 +11,28 @@ export function AllCompetitions() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [page, setPage] = useState(1);
 
-  const { data: competitionsData, error, isLoading } = useGetCompetitionsQuery({ page, limit: 10 });
+  const selectedCategorySlug = selectedCategory === 'all' ? undefined : selectedCategory;
+  const { data: competitionsData, error, isLoading } = useGetCompetitionsQuery({
+    page,
+    limit: 10,
+    category_slug: selectedCategorySlug,
+    status: 'active',
+  });
+  const { data: categoriesData, isLoading: categoriesLoading, error: categoriesError } = useGetCategoriesQuery();
+  const competitions = competitionsData?.data.competitions ?? [];
+  const categories = categoriesData ?? [];
+  const filteredCompetitions = competitions.filter((competition) => {
+    const matchesSearch = (() => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        competition.title.toLowerCase().includes(query) ||
+        competition.short_description?.toLowerCase().includes(query)
+      );
+    })();
 
-  const categories = [{
-    id: 'all',
-    name: 'All Categories'
-  }, {
-    id: 'cars',
-    name: 'Luxury Cars'
-  }, {
-    id: 'tech',
-    name: 'Technology'
-  }, {
-    id: 'travel',
-    name: 'Travel & Experiences'
-  }, {
-    id: 'cash',
-    name: 'Cash Prizes'
-  }, {
-    id: 'watches',
-    name: 'Watches & Jewelry'
-  }];
+    return matchesSearch;
+  });
   
   const containerVariants = {
     hidden: {
@@ -79,10 +80,12 @@ export function AllCompetitions() {
               <input type="text" placeholder="Search competitions..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-gradient-end rounded-xl border border-gray-700 focus:border-accent focus:outline-none transition-colors" />
             </div>
             <div className="flex gap-4">
-              <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className="px-4 py-3 bg-gradient-end rounded-xl border border-gray-700 focus:border-accent focus:outline-none transition-colors">
-                {categories.map(category => <option key={category.id} value={category.id}>
+              <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} disabled={categoriesLoading} className="px-4 py-3 bg-gradient-end rounded-xl border border-gray-700 focus:border-accent focus:outline-none transition-colors">
+                <option value="all">All Categories</option>
+                {categories.map(category => <option key={category._id} value={category.slug}>
                     {category.name}
                   </option>)}
+                {categoriesError && <option value="__error">Categories unavailable</option>}
               </select>
               <div className="flex gap-2 bg-gradient-end rounded-xl p-1 border border-gray-700">
                 <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-accent' : 'hover:bg-gray-700'}`}>
@@ -99,7 +102,10 @@ export function AllCompetitions() {
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8' : 'space-y-6'}>
           {isLoading && <p>Loading competitions...</p>}
           {error && <p>Error fetching competitions.</p>}
-          {competitionsData && competitionsData.data.competitions.map((competition, index) => <motion.div key={competition._id} variants={itemVariants}>
+          {filteredCompetitions.length === 0 && !isLoading && !error && (
+            <p className="text-text-secondary">No competitions match your search.</p>
+          )}
+          {filteredCompetitions.map((competition, index) => <motion.div key={competition._id} variants={itemVariants}>
               <CompetitionCard
                 key={competition._id}
                 id={competition._id}

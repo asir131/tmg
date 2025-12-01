@@ -1,5 +1,5 @@
 import { api } from './baseApi';
-import { CompetitionsResponse, CompetitionDetailsResponse } from '../types';
+import { CompetitionsResponse, CompetitionDetailsResponse, Category } from '../types';
 
 export interface MyCompetitionEntry {
   _id: string;
@@ -85,6 +85,14 @@ export interface ResultsResponse {
   };
 }
 
+export interface CategoriesResponse {
+  success: boolean;
+  message: string;
+  data: {
+    categories: Category[];
+  };
+}
+
 export interface LiveStreamResponse {
   success: boolean;
   message: string;
@@ -115,8 +123,13 @@ export interface LiveStreamResponse {
 
 export const competitionsApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getCompetitions: builder.query<CompetitionsResponse, { page: number; limit: number }>({
-      query: ({ page = 1, limit = 10 }) => `competitions?page=${page}&limit=${limit}`,
+    getCompetitions: builder.query<CompetitionsResponse, { page: number; limit: number; category_slug?: string; status?: string }>({
+      query: ({ page = 1, limit = 10, category_slug, status = 'active' }) => {
+        if (category_slug) {
+          return `competitions/by-category?category_slug=${category_slug}&status=${status}&page=${page}&limit=${limit}`;
+        }
+        return `competitions?page=${page}&limit=${limit}`;
+      },
     }),
     getCompetitionById: builder.query<CompetitionDetailsResponse, string>({
       query: (id) => `competitions/${id}`,
@@ -133,7 +146,11 @@ export const competitionsApi = api.injectEndpoints({
     getLiveStream: builder.query<LiveStreamResponse, void>({
       query: () => 'streams/live',
     }),
+    getCategories: builder.query<Category[], void>({
+      query: () => 'categories',
+      transformResponse: (response: CategoriesResponse) => response.data.categories,
+    }),
   }),
 });
 
-export const { useGetCompetitionsQuery, useGetCompetitionByIdQuery, useGetMyCompetitionsQuery, useGetCompetitionTicketsQuery, useGetResultsQuery, useGetLiveStreamQuery } = competitionsApi;
+export const { useGetCompetitionsQuery, useGetCompetitionByIdQuery, useGetMyCompetitionsQuery, useGetCompetitionTicketsQuery, useGetResultsQuery, useGetLiveStreamQuery, useGetCategoriesQuery } = competitionsApi;

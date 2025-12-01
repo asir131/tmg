@@ -3,35 +3,23 @@ import { Link, useNavigate } from 'react-router-dom';
 import { CompetitionCard } from '../components/CompetitionCard';
 import { motion } from 'framer-motion';
 import { ArrowRightIcon, TrophyIcon, CalendarIcon, TicketIcon, UsersIcon, GiftIcon, PoundSterlingIcon, CoinsIcon } from 'lucide-react';
-import { useGetCompetitionsQuery } from '../store/api/competitionsApi';
+import { useGetCompetitionsQuery, useGetResultsQuery } from '../store/api/competitionsApi';
 import { SafeImage } from '../components/SafeImage';
 
 export function Home() {
   const navigate = useNavigate();
   const { data: competitionsData, error, isLoading } = useGetCompetitionsQuery({ page: 1, limit: 3 });
+  const { data: winnersData, isLoading: winnersLoading, error: winnersError } = useGetResultsQuery({ page: 1, limit: 3 });
 
-  const recentWinners = [{
-    id: '1',
-    name: 'Sarah Johnson',
-    prize: 'Luxury Sports Car',
-    imageUrl: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    winDate: '2 days ago',
-    value: '£85,000'
-  }, {
-    id: '2',
-    name: 'Michael Chen',
-    prize: 'Dream Vacation Package',
-    imageUrl: 'https://images.unsplash.com/photo-1506929562872-bb421503ef21?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    winDate: '5 days ago',
-    value: '£15,000'
-  }, {
-    id: '3',
-    name: 'Emma Williams',
-    prize: 'Gaming Console Bundle',
-    imageUrl: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    winDate: '1 week ago',
-    value: '£2,500'
-  }];
+  const recentWinners = (winnersData?.data?.results ?? []).map((winner) => ({
+    id: winner._id,
+    name: winner.user_id?.name || 'Winner',
+    prize: winner.competition_id?.title || 'Competition',
+    imageUrl: winner.competition_id?.image_url || '/Simplification.svg',
+    winDate: new Date(winner.draw_date).toLocaleDateString('en-GB'),
+    value: `£${(winner.prize_value ?? 0).toLocaleString('en-GB')}`,
+  }));
+
   return <div>
       {/* Hero Section */}
       <section className="relative h-[600px] overflow-hidden">
@@ -161,6 +149,11 @@ export function Home() {
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {winnersLoading && <p className="text-text-secondary">Loading winners...</p>}
+            {winnersError && <p className="text-red-500">Failed to load winners.</p>}
+            {!winnersLoading && !winnersError && recentWinners.length === 0 && (
+              <p className="text-text-secondary">No winners found.</p>
+            )}
             {recentWinners.map((winner, index) => <motion.div key={winner.id} initial={{
             opacity: 0,
             y: 20
