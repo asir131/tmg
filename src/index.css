@@ -1,0 +1,101 @@
+/* URL IMPORTS (SUCH AS FONT IMPORTS) SHOULD BE KEPT ABOVE TAILWIND IMPORTS - DO NOT DELETE THIS COMMENT */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+/* PLEASE NOTE: THESE TAILWIND IMPORTS SHOULD NEVER BE DELETED - DO NOT DELETE THIS COMMENT */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+/* DO NOT DELETE THESE TAILWIND IMPORTS, OTHERWISE THE STYLING WILL NOT RENDER AT ALL - DO NOT DELETE THIS COMMENT */
+
+:root {
+  --color-base: #000000;
+  --color-gradient-start: #060D19;
+  --color-gradient-end: #02060E;
+  --color-accent: #1538a0; /* #1D4ED8 dimmed by 40% */
+  --color-card: #131722;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #9ca3af;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+}
+
+body {
+  background: var(--color-base);
+  color: var(--color-text-primary);
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.premium-gradient {
+  background: linear-gradient(135deg, var(--color-gradient-start), var(--color-gradient-end));
+}
+
+.card-premium {
+  background: var(--color-card);
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-premium:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7), 0 0 8px rgba(29, 78, 216, 0.2);
+}
+
+.btn-premium {
+  background: linear-gradient(135deg, #1538a0, #0c2159);
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-premium:hover {
+  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.4);
+  transform: translateY(-2px);
+}
+
+.glass-overlay {
+  background: rgba(6, 13, 25, 0.7);
+  backdrop-filter: blur(8px);
+}
+
+.header-blur {
+  backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@layer components {
+  .container-premium {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+}
+
+/* Custom Scrollbar Styles */
+.scrollable-modal {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) rgba(31, 41, 55, 0.3);
+}
+
+.scrollable-modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollable-modal::-webkit-scrollbar-track {
+  background: rgba(31, 41, 55, 0.3);
+  border-radius: 4px;
+}
+
+.scrollable-modal::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+
+.scrollable-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
+}
