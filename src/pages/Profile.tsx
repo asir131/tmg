@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   UserIcon,
@@ -16,9 +17,12 @@ import {
   useGetPointsHistoryQuery,
   useGetPurchaseHistoryQuery,
 } from "../store/api/profileApi";
+import { useLogoutUserMutation } from "../store/api/authApi";
 
 export function Profile() {
   const [activeSection, setActiveSection] = useState("account");
+  const location = useLocation();
+  const navigate = useNavigate();
   const { data: profile, isLoading, error } = useGetProfileQuery();
   const { data: pointsSummary } = useGetPointsSummaryQuery();
   const [pointsPage, setPointsPage] = useState(1);
@@ -68,6 +72,13 @@ export function Profile() {
   const purchaseHistory = purchaseHistoryData?.data?.purchase_history ?? [];
   const purchasePagination = purchaseHistoryData?.data?.pagination;
   const totalPurchasePages = purchasePagination?.totalPages ?? 1;
+  const [logoutUser, { isLoading: isLoggingOut }] = useLogoutUserMutation();
+
+  useEffect(() => {
+    if (location.pathname.includes("/points")) {
+      setActiveSection("points");
+    }
+  }, [location.pathname]);
 
   const handleEditOrSave = async () => {
     if (!isEditing) {
@@ -89,6 +100,18 @@ export function Profile() {
     } catch (err) {
       console.error("Failed to update profile", err);
       setStatusMessage("Failed to update profile.");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser().unwrap();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      navigate("/login");
     }
   };
 
@@ -153,16 +176,20 @@ export function Profile() {
                     className={`w-full flex items-center px-4 py-3 rounded-xl transition-colors ${
                       activeSection === item.id
                         ? "bg-accent text-white"
-                        : "hover:bg-gray-800"
+                      : "hover:bg-gray-800"
                     }`}
                   >
                     <item.icon className="w-5 h-5 mr-3" />
                     {item.label}
                   </button>
                 ))}
-                <button className="w-full flex items-center px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-400 transition-colors">
+                <button
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="w-full flex items-center px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <LogOutIcon className="w-5 h-5 mr-3" />
-                  Logout
+                  {isLoggingOut ? "Logging out..." : "Logout"}
                 </button>
               </nav>
             </div>

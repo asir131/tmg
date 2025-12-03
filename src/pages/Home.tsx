@@ -10,6 +10,7 @@ export function Home() {
   const navigate = useNavigate();
   const { data: competitionsData, error, isLoading } = useGetCompetitionsQuery({ page: 1, limit: 3 });
   const { data: winnersData, isLoading: winnersLoading, error: winnersError } = useGetResultsQuery({ page: 1, limit: 3 });
+  const isAuthenticated = !!localStorage.getItem('accessToken');
 
   const recentWinners = (winnersData?.data?.results ?? []).map((winner) => ({
     id: winner._id,
@@ -284,14 +285,18 @@ export function Home() {
                 </li>
               </ul>
               {/* View Your Points Button */}
-<button
-  onClick={() => {
-      navigate('/profile/points'); // go to points page
-  }}
-  className="btn-premium"
->
-  View Your Points
-</button>
+              <button
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    navigate('/login');
+                    return;
+                  }
+                  navigate('/profile/points');
+                }}
+                className="btn-premium"
+              >
+                View Your Points
+              </button>
             </div>
             <div className="md:w-200">
               <motion.div initial={{

@@ -19,7 +19,6 @@ import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { PrivateRoute } from './components/PrivateRoute';
-import { PublicRoute } from './components/PublicRoute';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
 
@@ -29,26 +28,24 @@ export function App() {
       <Router>
         <Layout>
         <Routes>
-          <Route element={<PublicRoute />}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/" element={<Home />} />
-          </Route>
+          <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/competitions" element={<AllCompetitions />} />
+          <Route path="/competition/:id" element={<CompetitionDetails />} />
+          <Route path="/winners" element={<Winners />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/live-draws" element={<LiveDraws />} />
+          <Route path="/live-draw/:id" element={<CompetitionLiveDetail />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route element={<PrivateRoute />}>
-            <Route path="/home" element={<Home />} />
-            <Route path="/competitions" element={<AllCompetitions />} />
-            <Route path="/competition/:id" element={<CompetitionDetails />} />
-            <Route path="/winners" element={<Winners />} />
-            <Route path="/faq" element={<FAQ />} />
             <Route path="/entries" element={<EntryList />} />
             <Route path="/entry/:id" element={<EntryDetail />} />
-            <Route path="/live-draws" element={<LiveDraws />} />
-            <Route path="/live-draw/:id" element={<CompetitionLiveDetail />} />
             <Route path="/profile/*" element={<Profile />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/payment/success" element={<PaymentSuccess />} />
-            <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           </Route>
         </Routes>
         </Layout>

@@ -21,6 +21,13 @@ export const authApi = api.injectEndpoints({
         body: credentials,
       }),
     }),
+    logoutUser: builder.mutation<{ message: string }, void>({
+      query: () => ({
+        url: 'auth/logout',
+        method: 'POST',
+      }),
+      invalidatesTags: ['Cart', 'Profile'],
+    }),
     getMe: builder.query<User, void>({
       query: () => 'auth/me',
       transformResponse: (response: { data: { user: User } }) => response.data.user,
@@ -28,4 +35,4 @@ export const authApi = api.injectEndpoints({
   }),
 });
 
-export const { useRegisterUserMutation, useLoginUserMutation, useGetMeQuery } = authApi;
+export const { useRegisterUserMutation, useLoginUserMutation, useLogoutUserMutation, useGetMeQuery } = authApi;

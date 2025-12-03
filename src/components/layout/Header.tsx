@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ShoppingCartIcon, UserIcon, MenuIcon, XIcon } from "lucide-react";
 import { CartDrawer } from "../CartDrawer";
-import { useGetMeQuery } from "../../store/api/authApi";
+import { useGetMeQuery, useLogoutUserMutation } from "../../store/api/authApi";
 import { useGetCartQuery } from "../../store/api/cartApi";
 import { useGetPointsSummaryQuery } from "../../store/api/profileApi";
 import { SafeImage } from "../SafeImage";
@@ -22,6 +22,7 @@ export function Header() {
       skip: !isAuthenticated,
     }
   );
+  const [logoutUser] = useLogoutUserMutation();
   const { data: cartData } = useGetCartQuery(undefined, {
     skip: !isAuthenticated,
   });
@@ -50,11 +51,17 @@ export function Header() {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const toggleProfile = () => setIsProfileOpen(!isProfileOpen);
 
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    setIsProfileOpen(false);
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logoutUser().unwrap();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      setIsProfileOpen(false);
+      navigate("/login");
+    }
   };
 
   const navigation = [

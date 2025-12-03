@@ -11,6 +11,7 @@ export function CompetitionLiveDetail() {
   const navigate = useNavigate();
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const isAuthenticated = !!localStorage.getItem('accessToken');
   const competition = {
     id: id || '1',
     title: 'Luxury Sports Car Live Draw',
@@ -23,13 +24,21 @@ export function CompetitionLiveDetail() {
     status: 'live' as const
   };
   const handleBuyNow = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
     if (!selectedAnswer) {
       alert('Please answer the question first!');
       return;
     }
-    navigate('/src/pages/Checkout.tsx');
+    navigate('/checkout');
   };
   const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
     if (!selectedAnswer) {
       alert('Please answer the question first!');
       return;
@@ -172,16 +181,14 @@ export function CompetitionLiveDetail() {
                     ⚠ Please answer the question below to purchase tickets
                   </div>}
                 <div className="space-y-3">
-                  <Link to="/checkout">
-                                                    <motion.button onClick={handleBuyNow} disabled={!selectedAnswer} className="w-full btn-premium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" whileHover={selectedAnswer ? {
-                                    scale: 1.02
-                                  } : {}} whileTap={selectedAnswer ? {
-                                    scale: 0.98
-                                  } : {}}>
-                                      <CreditCardIcon className="w-5 h-5 mr-2" />
-                                      Buy Now
-                                    </motion.button>
-                                    </Link>
+                  <motion.button onClick={handleBuyNow} disabled={!selectedAnswer} className="w-full btn-premium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" whileHover={selectedAnswer ? {
+                                      scale: 1.02
+                                    } : {}} whileTap={selectedAnswer ? {
+                                      scale: 0.98
+                                    } : {}}>
+                    <CreditCardIcon className="w-5 h-5 mr-2" />
+                    Buy Now
+                  </motion.button>
                   <motion.button onClick={handleAddToCart} disabled={!selectedAnswer} className="w-full py-3 rounded-xl bg-gradient-end hover:bg-gray-700 transition-colors border border-gray-700 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed" whileHover={selectedAnswer ? {
                   scale: 1.02
                 } : {}} whileTap={selectedAnswer ? {
