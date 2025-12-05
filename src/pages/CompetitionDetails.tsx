@@ -19,6 +19,8 @@ import { SafeImage } from "../components/SafeImage";
 import { SinglePurchaseModal } from "../components/SinglePurchaseModal";
 import { useGetCompetitionByIdQuery } from "../store/api/competitionsApi";
 import { useAddToCartMutation } from "../store/api/cartApi";
+import { useGetFaqsQuery } from "../store/api/faqApi";
+import { useGetTermsQuery } from "../store/api/termsApi";
 
 export function CompetitionDetails() {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +39,16 @@ export function CompetitionDetails() {
     isLoading: isCompetitionLoading,
   } = useGetCompetitionByIdQuery(id || "");
   const [addToCart, { isLoading: isAddingToCart }] = useAddToCartMutation();
+  const {
+    data: faqItems,
+    isLoading: isFaqsLoading,
+    error: faqsError,
+  } = useGetFaqsQuery();
+  const {
+    data: termsSections,
+    isLoading: isTermsLoading,
+    error: termsError,
+  } = useGetTermsQuery();
 
   const competition = data?.data.competition;
   const correctAnswer = "Volkswagen";
@@ -58,23 +70,6 @@ export function CompetitionDetails() {
       </div>
     );
   }
-
-  const faqs = [
-    {
-      question: "When will the winner be announced?",
-      answer:
-        "The winner will be announced via live draw on the specified end date. All participants will be notified via email.",
-    },
-    {
-      question: "How will I receive my prize?",
-      answer:
-        "If you win, we'll contact you within 24 hours to arrange delivery of your prize. All shipping costs are covered.",
-    },
-    {
-      question: "Can I purchase multiple tickets?",
-      answer: `Yes! You can purchase up to ${competition.max_per_person} tickets. The more tickets you buy, the better your chances of winning.`,
-    },
-  ];
 
   const subtotal = quantity * competition.ticket_price;
   const total = subtotal;
@@ -424,12 +419,26 @@ export function CompetitionDetails() {
                     }}
                     className="space-y-4"
                   >
-                    {faqs.map((faq, index) => (
-                      <div key={index} className="card-premium p-4">
+                    {isFaqsLoading && (
+                      <p className="text-text-secondary">Loading FAQs...</p>
+                    )}
+                    {faqsError && (
+                      <p className="text-red-500">Failed to load FAQs.</p>
+                    )}
+                    {faqItems?.map((faq) => (
+                      <div key={faq._id} className="card-premium p-4">
                         <h3 className="font-semibold mb-2">{faq.question}</h3>
                         <p className="text-text-secondary">{faq.answer}</p>
                       </div>
                     ))}
+                    {faqItems &&
+                      faqItems.length === 0 &&
+                      !isFaqsLoading &&
+                      !faqsError && (
+                        <p className="text-text-secondary">
+                          No FAQs available.
+                        </p>
+                      )}
                   </motion.div>
                 )}
                 {activeTab === "terms" && (
@@ -443,16 +452,36 @@ export function CompetitionDetails() {
                     transition={{
                       duration: 0.3,
                     }}
-                    className="prose prose-invert max-w-none"
+                    className="prose prose-invert max-w-none space-y-4"
                   >
-                    <h3>Terms & Conditions</h3>
-                    <ul>
-                      <li>Participants must be 18 years or older</li>
-                      <li>Competition ends on the specified date</li>
-                      <li>Winner will be selected via random draw</li>
-                      <li>Winner will be contacted within 24 hours</li>
-                      <li>Prize cannot be exchanged for cash</li>
-                    </ul>
+                    {isTermsLoading && (
+                      <p className="text-text-secondary">
+                        Loading terms & conditions...
+                      </p>
+                    )}
+                    {termsError && (
+                      <p className="text-red-500">
+                        Failed to load terms & conditions.
+                      </p>
+                    )}
+                    {termsSections?.map((section, index) => (
+                      <div key={section.id || index} className="card-premium p-4">
+                        <h3 className="font-semibold mb-2">
+                          {index + 1}. {section.title}
+                        </h3>
+                        <p className="text-text-secondary whitespace-pre-line">
+                          {section.content}
+                        </p>
+                      </div>
+                    ))}
+                    {termsSections &&
+                      termsSections.length === 0 &&
+                      !isTermsLoading &&
+                      !termsError && (
+                        <p className="text-text-secondary">
+                          No terms available.
+                        </p>
+                      )}
                   </motion.div>
                 )}
               </div>

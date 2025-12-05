@@ -5,12 +5,22 @@ import { TrophyIcon, CheckCircleIcon, LoaderIcon } from "lucide-react";
 import { usePaymentStatus } from "../hooks/usePaymentStatus";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useDispatch } from "react-redux";
+import { api } from "../store/api/baseApi";
 
 export function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const paymentIntentId = searchParams.get("payment_intent_id");
   const { status, loading, error } = usePaymentStatus(paymentIntentId);
+  const dispatch = useDispatch();
+
+  // Invalidate profile-related data once tickets are created so points, totals, and history refresh.
+  useEffect(() => {
+    if (status?.tickets_created) {
+      dispatch(api.util.invalidateTags(["Profile"]));
+    }
+  }, [status?.tickets_created, dispatch]);
 
   useEffect(() => {
     if (status?.tickets_created) {
@@ -34,7 +44,9 @@ export function PaymentSuccess() {
           >
             <LoaderIcon className="w-12 h-12 text-accent animate-spin" />
           </motion.div>
-          <h1 className="text-4xl font-bold mb-4">Processing your payment...</h1>
+          <h1 className="text-4xl font-bold mb-4">
+            Processing your payment...
+          </h1>
           <p className="text-text-secondary">
             Please wait while we create your tickets.
           </p>
@@ -141,4 +153,3 @@ export function PaymentSuccess() {
     </div>
   );
 }
-

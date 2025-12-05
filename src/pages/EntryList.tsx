@@ -11,7 +11,14 @@ export function EntryList() {
   const [selectedCompetition, setSelectedCompetition] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const navigate = useNavigate();
-  const { data, isLoading, error } = useGetMyCompetitionsQuery();
+  const { data, isLoading, error, refetch } = useGetMyCompetitionsQuery(
+    undefined,
+    {
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      refetchOnMountOrArgChange: true,
+    }
+  );
 
   const entries = data?.data?.competitions ?? [];
 
@@ -146,7 +153,17 @@ export function EntryList() {
           {isLoading && (
             <p className="text-text-secondary">Loading entries...</p>
           )}
-          {error && <p className="text-red-500">Failed to load entries.</p>}
+          {error && (
+            <div className="text-red-500 space-y-2">
+              <p>Failed to load entries.</p>
+              <button
+                onClick={() => refetch()}
+                className="px-4 py-2 rounded-lg bg-gradient-end hover:bg-gray-700 transition-colors text-white"
+              >
+                Retry
+              </button>
+            </div>
+          )}
           {filteredEntries.map((entry) => (
             <motion.div
               key={entry._id}

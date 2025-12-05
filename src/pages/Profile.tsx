@@ -23,16 +23,47 @@ export function Profile() {
   const [activeSection, setActiveSection] = useState("account");
   const location = useLocation();
   const navigate = useNavigate();
-  const { data: profile, isLoading, error } = useGetProfileQuery();
-  const { data: pointsSummary } = useGetPointsSummaryQuery();
+  const { data: profile, isLoading, error } = useGetProfileQuery(undefined, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMountOrArgChange: true,
+  });
+  const {
+    data: pointsSummary,
+    refetch: refetchPointsSummary,
+  } = useGetPointsSummaryQuery(undefined, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+    pollingInterval: activeSection === "points" ? 5000 : 0,
+  });
   const [pointsPage, setPointsPage] = useState(1);
   const pointsPerPage = 10;
-  const { data: pointsHistoryData, isLoading: isPointsHistoryLoading } =
-    useGetPointsHistoryQuery({ page: pointsPage, limit: pointsPerPage });
+  const {
+    data: pointsHistoryData,
+    isLoading: isPointsHistoryLoading,
+    refetch: refetchPointsHistory,
+  } = useGetPointsHistoryQuery(
+    { page: pointsPage, limit: pointsPerPage },
+    {
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      pollingInterval: activeSection === "points" ? 5000 : 0,
+    }
+  );
   const [purchasePage, setPurchasePage] = useState(1);
   const purchasePerPage = 10;
-  const { data: purchaseHistoryData, isLoading: isPurchaseHistoryLoading } =
-    useGetPurchaseHistoryQuery({ page: purchasePage, limit: purchasePerPage });
+  const {
+    data: purchaseHistoryData,
+    isLoading: isPurchaseHistoryLoading,
+    refetch: refetchPurchaseHistory,
+  } = useGetPurchaseHistoryQuery(
+    { page: purchasePage, limit: purchasePerPage },
+    {
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      pollingInterval: activeSection === "tickets" ? 5000 : 0,
+    }
+  );
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -79,6 +110,22 @@ export function Profile() {
       setActiveSection("points");
     }
   }, [location.pathname]);
+
+  // Force a refresh when switching into points or tickets sections so totals stay live.
+  useEffect(() => {
+    if (activeSection === "points") {
+      refetchPointsSummary();
+      refetchPointsHistory();
+    }
+    if (activeSection === "tickets") {
+      refetchPurchaseHistory();
+    }
+  }, [
+    activeSection,
+    refetchPointsSummary,
+    refetchPointsHistory,
+    refetchPurchaseHistory,
+  ]);
 
   const handleEditOrSave = async () => {
     if (!isEditing) {

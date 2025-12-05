@@ -12,12 +12,19 @@ export function AllCompetitions() {
   const [page, setPage] = useState(1);
 
   const selectedCategorySlug = selectedCategory === 'all' ? undefined : selectedCategory;
-  const { data: competitionsData, error, isLoading } = useGetCompetitionsQuery({
-    page,
-    limit: 10,
-    category_slug: selectedCategorySlug,
-    status: 'active',
-  });
+  const { data: competitionsData, error, isLoading, refetch: refetchCompetitions } = useGetCompetitionsQuery(
+    {
+      page,
+      limit: 10,
+      category_slug: selectedCategorySlug,
+      status: 'active',
+    },
+    {
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      refetchOnMountOrArgChange: true,
+    }
+  );
   const { data: categoriesData, isLoading: categoriesLoading, error: categoriesError } = useGetCategoriesQuery();
   const competitions = competitionsData?.data.competitions ?? [];
   const categories = categoriesData ?? [];
@@ -101,7 +108,17 @@ export function AllCompetitions() {
         {/* Competitions Grid */}
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8' : 'space-y-6'}>
           {isLoading && <p>Loading competitions...</p>}
-          {error && <p>Error fetching competitions.</p>}
+          {error && (
+            <div className="space-y-2">
+              <p>Error fetching competitions.</p>
+              <button
+                onClick={() => refetchCompetitions()}
+                className="px-4 py-2 rounded-lg bg-gradient-end hover:bg-gray-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          )}
           {filteredCompetitions.length === 0 && !isLoading && !error && (
             <p className="text-text-secondary">No competitions match your search.</p>
           )}

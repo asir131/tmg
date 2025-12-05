@@ -19,7 +19,14 @@ export function Winners() {
   const [page, setPage] = useState(1);
   const [selectedWinner, setSelectedWinner] = useState<WinnerCard | null>(null);
 
-  const { data, isLoading, error } = useGetResultsQuery({ page, limit: 10 });
+  const { data, isLoading, error, refetch } = useGetResultsQuery(
+    { page, limit: 10 },
+    {
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      refetchOnMountOrArgChange: true,
+    }
+  );
 
   const winners: WinnerCard[] = useMemo(() => {
     if (!data?.data?.results) return [];
@@ -82,7 +89,15 @@ export function Winners() {
           <p className="text-text-secondary mb-4">Loading winners...</p>
         )}
         {error && (
-          <p className="text-red-500 mb-4">Failed to load winners.</p>
+          <div className="text-red-500 mb-4 space-y-2">
+            <p>Failed to load winners.</p>
+            <button
+              onClick={() => refetch()}
+              className="px-4 py-2 rounded-lg bg-gradient-end hover:bg-gray-700 transition-colors text-white"
+            >
+              Retry
+            </button>
+          </div>
         )}
 
         <motion.div
