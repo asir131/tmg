@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MinusIcon,
@@ -676,13 +676,13 @@ export function CompetitionDetails() {
                 </div>
               </div>
               <div className="text-center mb-6">
-                <a
-                  href="/terms-and-conditions"
+                <Link
+                  to="/terms-and-conditions"
                   className="text-accent hover:underline font-medium"
                   onClick={() => setShowPostalModal(false)}
                 >
                   For full terms and conditions click here
-                </a>
+                </Link>
               </div>
               <button
                 onClick={() => setShowPostalModal(false)}
