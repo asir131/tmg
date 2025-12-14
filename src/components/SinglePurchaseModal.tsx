@@ -4,9 +4,7 @@ import { XIcon, LockIcon, LoaderIcon } from "lucide-react";
 import { useStripe, PaymentElement, Elements } from "@stripe/react-stripe-js";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import {
-  useCreateSinglePurchaseIntentMutation,
-} from "../store/api/cartApi";
+import { useCreateSinglePurchaseIntentMutation } from "../store/api/cartApi";
 import { PaymentForm } from "./PaymentForm";
 
 interface SinglePurchaseModalProps {
@@ -71,46 +69,6 @@ export function SinglePurchaseModal({
     } finally {
       setIsCreatingIntent(false);
     }
-  };
-
-  const pollForTicketCreation = async (paymentIntentId: string) => {
-    const maxAttempts = 30;
-    const interval = 2000; // 2 seconds
-
-    for (let i = 0; i < maxAttempts; i++) {
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/payments/status/${paymentIntentId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-            },
-          }
-        );
-
-        const data = await response.json();
-
-        if (data.success && data.data?.tickets_created) {
-          toast.success("Payment successful! Tickets created.");
-          onClose();
-          navigate(`/payment/success?payment_intent_id=${paymentIntentId}`);
-          return;
-        }
-
-        if (data.data?.status === "failed") {
-          throw new Error("Payment failed");
-        }
-
-        // Wait before next poll
-        await new Promise((resolve) => setTimeout(resolve, interval));
-      } catch (err: any) {
-        throw err;
-      }
-    }
-
-    toast.warning("Payment processing is taking longer than expected. Please check your entries page.");
-    onClose();
-    navigate(`/payment/success?payment_intent_id=${paymentIntentId}`);
   };
 
   if (!isOpen) return null;
@@ -190,9 +148,10 @@ export function SinglePurchaseModal({
                   clientSecret={clientSecret}
                   paymentIntentId={paymentIntentId!}
                   onComplete={async () => {
-                    if (paymentIntentId) {
-                      await pollForTicketCreation(paymentIntentId);
-                    }
+                    navigate(
+                      `/payment/success?payment_intent_id=${paymentIntentId}`
+                    );
+                    onClose();
                   }}
                   onError={(message) => {
                     toast.error(message);
@@ -213,4 +172,3 @@ export function SinglePurchaseModal({
     </AnimatePresence>
   );
 }
-

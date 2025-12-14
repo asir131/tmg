@@ -34,7 +34,6 @@ export function Profile() {
   } = useGetPointsSummaryQuery(undefined, {
     refetchOnFocus: true,
     refetchOnReconnect: true,
-    pollingInterval: activeSection === "points" ? 5000 : 0,
   });
   const [pointsPage, setPointsPage] = useState(1);
   const pointsPerPage = 10;
@@ -47,7 +46,6 @@ export function Profile() {
     {
       refetchOnFocus: true,
       refetchOnReconnect: true,
-      pollingInterval: activeSection === "points" ? 5000 : 0,
     }
   );
   const [purchasePage, setPurchasePage] = useState(1);
@@ -61,7 +59,6 @@ export function Profile() {
     {
       refetchOnFocus: true,
       refetchOnReconnect: true,
-      pollingInterval: activeSection === "tickets" ? 5000 : 0,
     }
   );
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();

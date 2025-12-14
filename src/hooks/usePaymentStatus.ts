@@ -27,37 +27,33 @@ export function usePaymentStatus(paymentIntentId: string | null) {
 
     let isMounted = true;
 
-    const pollStatus = async () => {
+    const fetchStatus = async () => {
       if (!isMounted) return;
-      
+
       setLoading(true);
       try {
         const result = await getPaymentStatus(paymentIntentId).unwrap();
         if (isMounted) {
           setStatus(result);
-          if (result.tickets_created) {
-            setLoading(false);
-          } else {
-            setLoading(false); // Still set loading to false so UI can show status
-          }
         }
       } catch (err: any) {
         if (isMounted) {
           setError(err?.data?.message || err?.message || 'Failed to get payment status');
+        }
+      } finally {
+        if (isMounted) {
           setLoading(false);
         }
       }
     };
 
-    pollStatus();
-    const interval = setInterval(pollStatus, 2000); // Poll every 2 seconds
+    // Single fetch instead of continuous polling to avoid repeated API calls
+    fetchStatus();
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
     };
   }, [paymentIntentId, getPaymentStatus]);
 
   return { status, loading, error };
 }
-

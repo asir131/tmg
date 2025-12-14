@@ -165,106 +165,6 @@ export function Checkout() {
     }
   };
 
-  const pollForTicketCreation = async (paymentIntentId: string) => {
-    const maxAttempts = 30;
-    const interval = 2000; // 2 seconds
-
-    setIsProcessing(true);
-
-    for (let i = 0; i < maxAttempts; i++) {
-      try {
-        const response = await fetch(
-          `${
-            import.meta.env.VITE_API_BASE_URL
-          }/payments/status/${paymentIntentId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          console.error(`Payment status check failed: ${response.status}`);
-          // Continue polling even if one request fails
-          await new Promise((resolve) => setTimeout(resolve, interval));
-          continue;
-        }
-
-        const data = await response.json();
-        console.log(`Poll attempt ${i + 1}:`, data);
-
-        const status = data.data?.status;
-        const ticketsCreated = data.data?.tickets_created;
-
-        // If tickets are created, we're done
-        if (data.success && ticketsCreated) {
-          setIsProcessing(false);
-          toast.success("Payment successful! Tickets created.");
-          return;
-        }
-
-        // If payment succeeded but tickets not created yet, continue polling
-        // but show a message that payment was successful
-        if (data.success && status === "succeeded" && !ticketsCreated) {
-          console.log(
-            "Payment succeeded, waiting for tickets to be created..."
-          );
-          // Continue polling
-        }
-
-        // If payment failed, stop polling
-        if (status === "failed" || status === "canceled") {
-          setIsProcessing(false);
-          toast.error(`Payment ${status}`);
-          return;
-        }
-
-        // If payment is still pending after many attempts, it might be a webhook issue
-        if (i >= 20 && status === "pending") {
-          console.warn(
-            "Payment still pending after 20 attempts - webhook may not be configured"
-          );
-        }
-
-        // Wait before next poll
-        await new Promise((resolve) => setTimeout(resolve, interval));
-      } catch (err: any) {
-        console.error(`Poll error on attempt ${i + 1}:`, err);
-        // Continue polling on error
-        await new Promise((resolve) => setTimeout(resolve, interval));
-      }
-    }
-
-    // If we get here, polling timed out
-    setIsProcessing(false);
-    toast.warning(
-      "Payment processing timed out. The payment may have succeeded - please check your entries page or contact support."
-    );
-
-    // Show a detailed message to the user
-    const userMessage = `
-Payment processing is taking longer than expected.
-
-This usually means the Stripe webhook is not configured or not working properly.
-
-Your payment may have succeeded in Stripe, but tickets haven't been created yet.
-
-What to do:
-1. Check your entries page - tickets may have been created
-2. Contact support with your payment intent ID: ${paymentIntentId}
-3. Check Stripe Dashboard to verify payment status
-
-Would you like to check your entries page now?
-    `.trim();
-
-    setTimeout(() => {
-      if (window.confirm(userMessage)) {
-        navigate("/entries");
-      }
-    }, 2000);
-  };
-
   if (isCartLoading) {
     return (
       <div className="py-8">
@@ -483,9 +383,6 @@ Would you like to check your entries page now?
                       onComplete={async () => {
                         setStep(3);
                         setIsProcessing(true);
-                        if (paymentIntentId) {
-                          await pollForTicketCreation(paymentIntentId);
-                        }
                       }}
                       onError={(message) => {
                         toast.error(message);
