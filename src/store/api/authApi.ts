@@ -29,7 +29,7 @@ export const authApi = api.injectEndpoints({
       invalidatesTags: ['Cart', 'Profile'],
     }),
     getMe: builder.query<User, void>({
-      query: () => 'auth/me',
+      query: () => 'user/profile',
       transformResponse: (response: { data: { user: User } }) => response.data.user,
     }),
   }),
