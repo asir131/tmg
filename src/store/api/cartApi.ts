@@ -25,7 +25,7 @@ export const cartApi = api.injectEndpoints({
       }),
       invalidatesTags: ['Cart'],
     }),
-    addToCart: builder.mutation<{ cart_item: CartItem }, { competition_id: string; quantity: number; points_to_redeem?: number; use_points?: boolean }>({
+    addToCart: builder.mutation<{ cart_item: CartItem }, { competition_id: string; quantity: number; answer: string; points_to_redeem?: number; use_points?: boolean }>({
       query: (body) => ({
         // API expects add-to-cart at /user/cart (no /item suffix)
         url: '/user/cart',
@@ -72,7 +72,7 @@ export const cartApi = api.injectEndpoints({
         amount: number;
         currency: string;
       },
-      { competition_id: string; quantity: number }
+      { competition_id: string; quantity: number; answer: string }
     >({
       query: (body) => ({
         url: '/payments/create-intent/single',

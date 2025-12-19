@@ -11,7 +11,6 @@ export function QuestionSection({
 }: QuestionSectionProps) {
   const question = "What car manufacturer produces the GOLF?";
   const options = ["Suzuki", "Volkswagen", "Mercedes", "Toyota"];
-  const correctAnswer = "Volkswagen";
   return (
     <motion.div
       initial={{
@@ -79,7 +78,7 @@ export function QuestionSection({
           }}
           className="mt-4 p-3 bg-green-500/20 rounded-lg text-green-400 text-sm"
         >
-          ✓ Answer submitted! You can now purchase tickets.
+          ✓ Answer selected. You can proceed to purchase tickets.
         </motion.div>
       )}
     </motion.div>

@@ -10,7 +10,8 @@ export interface Competition {
   title: string;
   short_description: string;
   long_description: string;
-  image_url: string;
+  image_url: string | null;
+  gallery_images?: string[];
   category_id: Category | null;
   draw_time: string;
   cash_alternative: number;

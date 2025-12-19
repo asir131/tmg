@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useCreateSinglePurchaseIntentMutation } from "../store/api/cartApi";
 import { PaymentForm } from "./PaymentForm";
+import { addBlockedCompetition } from "../utils/blockedCompetitions";
 
 interface SinglePurchaseModalProps {
   isOpen: boolean;
@@ -14,6 +15,8 @@ interface SinglePurchaseModalProps {
   quantity: number;
   ticketPrice: number;
   competitionTitle: string;
+  answer: string;
+  onBlocked: () => void;
 }
 
 export function SinglePurchaseModal({
@@ -23,6 +26,8 @@ export function SinglePurchaseModal({
   quantity,
   ticketPrice,
   competitionTitle,
+  answer,
+  onBlocked,
 }: SinglePurchaseModalProps) {
   const stripe = useStripe();
   const navigate = useNavigate();
@@ -33,6 +38,17 @@ export function SinglePurchaseModal({
   const [createSinglePurchaseIntent] = useCreateSinglePurchaseIntentMutation();
 
   const total = ticketPrice * quantity;
+
+  // Helper function to check if error is a wrong answer error
+  const isWrongAnswerError = (error: any): boolean => {
+    return (
+      error?.data?.code === 'WRONG_ANSWER' ||
+      error?.data?.code === 'INCORRECT_ANSWER' ||
+      error?.data?.message?.toLowerCase().includes('incorrect answer') ||
+      error?.data?.message?.toLowerCase().includes('wrong answer') ||
+      (error?.status === 403 && error?.data?.message?.toLowerCase().includes('answer'))
+    );
+  };
 
   // Create payment intent when modal opens
   useEffect(() => {
@@ -55,17 +71,27 @@ export function SinglePurchaseModal({
       const intentResult = await createSinglePurchaseIntent({
         competition_id: competitionId,
         quantity: quantity,
+        answer: answer,
       }).unwrap();
 
       setPaymentIntentId(intentResult.payment_intent_id);
       setClientSecret(intentResult.client_secret);
     } catch (err: any) {
-      const message =
-        err?.data?.message ||
-        err?.message ||
-        "Failed to create payment intent. Please try again.";
-      toast.error(message);
-      onClose();
+      // Check if error is due to wrong answer
+      if (isWrongAnswerError(err)) {
+        addBlockedCompetition(competitionId);
+        onBlocked();
+        const errorMessage = "Incorrect answer. You are now permanently blocked from purchasing tickets for this competition.";
+        toast.error(errorMessage);
+        onClose();
+      } else {
+        const message =
+          err?.data?.message ||
+          err?.message ||
+          "Failed to create payment intent. Please try again.";
+        toast.error(message);
+        onClose();
+      }
     } finally {
       setIsCreatingIntent(false);
     }

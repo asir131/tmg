@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -17,10 +17,13 @@ import { CountdownTimer } from "../components/CountdownTimer";
 import { QuestionSection } from "../components/QuestionSection";
 import { SafeImage } from "../components/SafeImage";
 import { SinglePurchaseModal } from "../components/SinglePurchaseModal";
+import { CompetitionImageGallery } from "../components/CompetitionImageGallery";
 import { useGetCompetitionByIdQuery } from "../store/api/competitionsApi";
 import { useAddToCartMutation } from "../store/api/cartApi";
-import { useGetFaqsQuery } from "../store/api/faqApi";
+import { useGetCompetitionFAQsQuery } from "../store/api/faqApi";
+import { useGetPostalEntryQuery } from "../store/api/postalEntryApi";
 import { useGetTermsQuery } from "../store/api/termsApi";
+import { isCompetitionBlocked, addBlockedCompetition } from "../utils/blockedCompetitions";
 
 export function CompetitionDetails() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +35,7 @@ export function CompetitionDetails() {
   const [showPostalModal, setShowPostalModal] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const {
     data,
@@ -43,7 +47,23 @@ export function CompetitionDetails() {
     data: faqItems,
     isLoading: isFaqsLoading,
     error: faqsError,
-  } = useGetFaqsQuery();
+  } = useGetCompetitionFAQsQuery(id || "", {
+    skip: !id,
+  });
+  const {
+    data: postalEntry,
+    isLoading: isPostalLoading,
+    error: postalError,
+  } = useGetPostalEntryQuery(id || "", {
+    skip: !id,
+  });
+  
+  // Check if postal error is 404 (not found) - this means no postal entry exists
+  // RTK Query errors have a 'status' property for HTTP errors
+  const isPostalNotFound = postalError && 
+    typeof postalError === 'object' && 
+    'status' in postalError && 
+    postalError.status === 404;
   const {
     data: termsSections,
     isLoading: isTermsLoading,
@@ -51,9 +71,26 @@ export function CompetitionDetails() {
   } = useGetTermsQuery();
 
   const competition = data?.data.competition;
-  const correctAnswer = "Volkswagen";
 
   const isAuthenticated = !!localStorage.getItem("accessToken");
+
+  // Check if competition is blocked
+  useEffect(() => {
+    if (competition?._id) {
+      setIsBlocked(isCompetitionBlocked(competition._id));
+    }
+  }, [competition?._id]);
+
+  // Helper function to check if error is a wrong answer error
+  const isWrongAnswerError = (error: any): boolean => {
+    return (
+      error?.data?.code === 'WRONG_ANSWER' ||
+      error?.data?.code === 'INCORRECT_ANSWER' ||
+      error?.data?.message?.toLowerCase().includes('incorrect answer') ||
+      error?.data?.message?.toLowerCase().includes('wrong answer') ||
+      (error?.status === 403 && error?.data?.message?.toLowerCase().includes('answer'))
+    );
+  };
 
   if (isCompetitionLoading) {
     return (
@@ -78,20 +115,17 @@ export function CompetitionDetails() {
     100
   );
 
-  const ensureCorrectAnswer = () => {
-    if (!selectedAnswer || selectedAnswer !== correctAnswer) {
-      toast.error("Please select the correct answer to continue.");
-      return false;
-    }
-    return true;
-  };
-
   const handleBuyNow = () => {
     if (!isAuthenticated) {
       navigate("/login");
       return;
     }
-    if (!ensureCorrectAnswer()) {
+    if (!selectedAnswer) {
+      toast.error("Please select an answer before purchasing tickets.");
+      return;
+    }
+    if (isBlocked) {
+      toast.error("You are blocked from purchasing tickets for this competition.");
       return;
     }
     setShowPurchaseModal(true);
@@ -103,97 +137,112 @@ export function CompetitionDetails() {
       navigate("/login");
       return;
     }
-    if (!ensureCorrectAnswer()) {
+    if (!selectedAnswer) {
+      toast.error("Please select an answer before adding to cart.");
+      return;
+    }
+    if (isBlocked) {
+      toast.error("You are blocked from purchasing tickets for this competition.");
       return;
     }
     try {
       await addToCart({
         competition_id: competition._id,
         quantity,
+        answer: selectedAnswer,
       }).unwrap();
       toast.success("Added to cart.");
     } catch (err: any) {
       console.error("Failed to add to cart:", err);
-      if (err.data && err.data.message) {
+      
+      // Check if error is due to wrong answer
+      if (isWrongAnswerError(err)) {
+        addBlockedCompetition(competition._id);
+        setIsBlocked(true);
+        const errorMessage = "Incorrect answer. You are now permanently blocked from purchasing tickets for this competition.";
+        setApiError(errorMessage);
+        toast.error(errorMessage);
+      } else if (err.data && err.data.message) {
         setApiError(err.data.message);
+        toast.error(err.data.message);
       } else {
         toast.error("Failed to add to cart. Please try again.");
       }
     }
   };
 
+  // Format date helper
+  const formatDate = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  // Format currency helper
+  const formatCurrency = (amount: number) => {
+    if (amount === 0) return 'Free';
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+    }).format(amount);
+  };
+
   return (
     <div className="py-8">
       <ToastContainer position="top-right" />
-      {/* Hero Section */}
-      <motion.div
-        initial={{
-          opacity: 0,
-          y: 20,
-        }}
-        animate={{
-          opacity: 1,
-          y: 0,
-        }}
-        transition={{
-          duration: 0.5,
-        }}
-        className="relative h-[500px] mb-8 rounded-2xl overflow-hidden"
-      >
-        <SafeImage
-          src={competition.image_url}
-          alt={competition.title}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-8">
-          <div className="container-premium">
-            <motion.div
-              initial={{
-                opacity: 0,
-                y: 20,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{
-                delay: 0.2,
-              }}
-            >
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                {competition.title}
-              </h1>
-              <p className="text-xl text-text-secondary mb-6 max-w-3xl">
-                {competition.short_description}
-              </p>
-              <div className="flex flex-wrap items-center gap-6">
-                <div>
-                  <div className="text-sm text-text-secondary mb-1">
-                    Ticket Price
-                  </div>
-                  <div className="text-3xl font-bold">
-                    £{competition.ticket_price.toFixed(2)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-text-secondary mb-1">
-                    Cash Alternative
-                  </div>
-                  <div className="text-3xl font-bold">
-                    £{competition.cash_alternative.toLocaleString()}
-                  </div>
-                </div>
-                <div className="ml-auto">
-                  <CountdownTimer
-                    endDate={new Date(competition.draw_countdown)}
-                  />
-                </div>
+      {/* Hero Section with Gallery */}
+      <div className="container-premium mb-8">
+        <CompetitionImageGallery competition={competition} />
+        <motion.div
+          initial={{
+            opacity: 0,
+            y: 20,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            delay: 0.2,
+          }}
+          className="mt-6"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            {competition.title}
+          </h1>
+          <p className="text-xl text-text-secondary mb-6 max-w-3xl">
+            {competition.short_description}
+          </p>
+          <div className="flex flex-wrap items-center gap-6">
+            <div>
+              <div className="text-sm text-text-secondary mb-1">
+                Ticket Price
               </div>
-            </motion.div>
+              <div className="text-3xl font-bold">
+                £{competition.ticket_price.toFixed(2)}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-text-secondary mb-1">
+                Cash Alternative
+              </div>
+              <div className="text-3xl font-bold">
+                £{competition.cash_alternative.toLocaleString()}
+              </div>
+            </div>
+            <div className="ml-auto">
+              <CountdownTimer
+                endDate={new Date(competition.draw_countdown)}
+              />
+            </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
       <div className="container-premium">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -334,13 +383,18 @@ export function CompetitionDetails() {
                 <button
                   onClick={() => {
                     setEntryType("postal");
-                    setShowPostalModal(true);
+                    if (postalEntry) {
+                      setShowPostalModal(true);
+                    } else if (!isPostalLoading && !isPostalNotFound && postalError) {
+                      toast.error("Failed to load postal entry instructions.");
+                    }
                   }}
+                  disabled={!postalEntry && !isPostalLoading && !isPostalNotFound}
                   className={`flex-1 px-6 py-4 text-sm font-medium transition-all relative ${
                     entryType === "postal"
                       ? "text-white"
                       : "text-text-secondary hover:text-white"
-                  }`}
+                  } ${!postalEntry && !isPostalLoading && !isPostalNotFound ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   Postal Entry
                   {entryType === "postal" && (
@@ -505,10 +559,20 @@ export function CompetitionDetails() {
             className="lg:col-span-1"
           >
             <div className="sticky top-24 space-y-6">
-              <QuestionSection
-                onAnswerSelected={setSelectedAnswer}
-                selectedAnswer={selectedAnswer}
-              />
+              {!isBlocked && (
+                <QuestionSection
+                  onAnswerSelected={setSelectedAnswer}
+                  selectedAnswer={selectedAnswer}
+                />
+              )}
+              {isBlocked && (
+                <div className="card-premium p-6 mb-6">
+                  <h3 className="text-xl font-bold mb-4 text-red-400">Answer to Enter</h3>
+                  <p className="text-text-secondary">
+                    You are blocked from purchasing tickets for this competition due to an incorrect answer.
+                  </p>
+                </div>
+              )}
               <div className="card-premium p-6">
                 <h2 className="text-xl font-bold mb-6">Purchase Tickets</h2>
                 <div className="mb-6">
@@ -538,6 +602,38 @@ export function CompetitionDetails() {
                     Max {competition.max_per_person} tickets per person
                   </div>
                 </div>
+                {/* Quick Select Card */}
+                <div className="mb-6">
+                  <label className="text-sm text-text-secondary block mb-2">
+                    Quick Select
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[20, 50, 80, 100].map((ticketCount) => {
+                      const isDisabled = ticketCount > competition.max_per_person;
+                      const isSelected = quantity === ticketCount;
+                      return (
+                        <button
+                          key={ticketCount}
+                          onClick={() => {
+                            if (!isDisabled) {
+                              setQuantity(Math.min(ticketCount, competition.max_per_person));
+                            }
+                          }}
+                          disabled={isDisabled}
+                          className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                            isSelected
+                              ? 'bg-accent text-white'
+                              : isDisabled
+                              ? 'bg-gradient-end text-text-secondary opacity-50 cursor-not-allowed'
+                              : 'bg-gradient-end hover:bg-gray-700 text-white border border-gray-700'
+                          }`}
+                        >
+                          {ticketCount}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <div className="space-y-3 mb-6 p-4 bg-gradient-end rounded-xl">
                   <div className="flex justify-between">
                     <span className="text-text-secondary">
@@ -560,20 +656,20 @@ export function CompetitionDetails() {
                     </div>
                   </div>
                 </div>
-                {!selectedAnswer && (
-                  <div className="mb-4 p-3 bg-yellow-500/20 rounded-lg text-yellow-400 text-sm">
-                    ⚠️ Please answer the question above to purchase tickets
+                {isBlocked && (
+                  <div className="mb-4 p-3 bg-red-500/20 rounded-lg text-red-400 text-sm border border-red-500/30">
+                    ⚠️ You are blocked from purchasing tickets for this competition due to an incorrect answer.
                   </div>
                 )}
-                {selectedAnswer && selectedAnswer !== correctAnswer && (
+                {!selectedAnswer && !isBlocked && (
                   <div className="mb-4 p-3 bg-yellow-500/20 rounded-lg text-yellow-400 text-sm">
-                    ⚠️ Please choose the correct answer to continue
+                    ⚠️ Please answer the question above to purchase tickets
                   </div>
                 )}
                 <div className="space-y-3">
                   <motion.button
                     onClick={handleBuyNow}
-                    disabled={!selectedAnswer}
+                    disabled={!selectedAnswer || isBlocked}
                     className="w-full btn-premium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                     whileHover={
                       selectedAnswer
@@ -596,7 +692,7 @@ export function CompetitionDetails() {
 
                   <motion.button
                     onClick={handleAddToCart}
-                    disabled={!selectedAnswer || isAddingToCart}
+                    disabled={!selectedAnswer || isAddingToCart || isBlocked}
                     className="w-full py-3 rounded-xl bg-gradient-end hover:bg-gray-700 transition-colors border border-gray-700 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                     whileHover={
                       selectedAnswer && !isAddingToCart ? { scale: 1.02 } : {}
@@ -636,7 +732,7 @@ export function CompetitionDetails() {
       </div>
       {/* Postal Entry Modal */}
       <AnimatePresence>
-        {showPostalModal && (
+        {showPostalModal && postalEntry && (
           <motion.div
             initial={{
               opacity: 0,
@@ -670,40 +766,52 @@ export function CompetitionDetails() {
               className="card-premium p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             >
               <h2 className="text-2xl font-bold mb-6">
-                Postal Entry Instructions
+                {postalEntry.title}
               </h2>
+              
+              {/* Instructions */}
               <div className="space-y-4 text-text-secondary mb-6">
-                <p>
-                  To enter this competition via postal entry, please follow
-                  these instructions:
-                </p>
-                <ol className="list-decimal list-inside space-y-3 ml-4">
-                  <li>
-                    Write your full name, address, email, and phone number on a
-                    postcard or piece of paper
-                  </li>
-                  <li>Include the competition name: "{competition.title}"</li>
-                  <li>Answer the competition question clearly</li>
-                  <li>
-                    Send your entry to: CompetitionHub, PO Box 12345, London,
-                    UK, SW1A 1AA
-                  </li>
-                  <li>
-                    Entries must be received before the competition closing date
-                  </li>
-                </ol>
-                <div className="bg-gradient-start p-4 rounded-xl border border-gray-700">
-                  <h3 className="font-semibold text-white mb-2">
-                    Important Notes:
-                  </h3>
-                  <ul className="list-disc list-inside space-y-2 text-sm">
-                    <li>Only one entry per envelope</li>
-                    <li>Entries via this method are free</li>
-                    <li>No purchase necessary for postal entries</li>
-                    <li>Illegible entries will be disqualified</li>
-                  </ul>
+                <div>
+                  <h3 className="font-semibold text-white mb-2">Instructions</h3>
+                  <div 
+                    className="whitespace-pre-line"
+                    style={{ whiteSpace: 'pre-line' }}
+                  >
+                    {postalEntry.instructions}
+                  </div>
+                </div>
+
+                {/* Postal Address */}
+                <div>
+                  <h3 className="font-semibold text-white mb-2">Postal Address</h3>
+                  <address 
+                    className="whitespace-pre-line not-italic"
+                    style={{ whiteSpace: 'pre-line' }}
+                  >
+                    {postalEntry.postal_address}
+                  </address>
+                </div>
+
+                {/* Deadline */}
+                <div>
+                  <h3 className="font-semibold text-white mb-2">Deadline</h3>
+                  <p className={`${new Date(postalEntry.deadline) < new Date() ? 'text-red-400' : ''}`}>
+                    {formatDate(postalEntry.deadline)}
+                  </p>
+                  {new Date(postalEntry.deadline) < new Date() && (
+                    <p className="text-red-400 text-sm mt-1">⚠️ Deadline has passed</p>
+                  )}
+                </div>
+
+                {/* Entry Fee */}
+                <div>
+                  <h3 className="font-semibold text-white mb-2">Entry Fee</h3>
+                  <p className="text-lg font-semibold">
+                    {formatCurrency(postalEntry.entry_fee)}
+                  </p>
                 </div>
               </div>
+
               <div className="text-center mb-6">
                 <Link
                   to="/terms-and-conditions"
@@ -731,6 +839,8 @@ export function CompetitionDetails() {
         quantity={quantity}
         ticketPrice={competition.ticket_price}
         competitionTitle={competition.title}
+        answer={selectedAnswer || ""}
+        onBlocked={() => setIsBlocked(true)}
       />
     </div>
   );

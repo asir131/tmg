@@ -22,7 +22,12 @@ export const faqApi = api.injectEndpoints({
       transformResponse: (response: FAQResponse) =>
         response.data.faqs.sort((a, b) => a.order - b.order),
     }),
+    getCompetitionFAQs: builder.query<FAQItem[], string>({
+      query: (competitionId) => `competitions/${competitionId}/faqs`,
+      transformResponse: (response: FAQResponse) =>
+        response.data.faqs.sort((a, b) => a.order - b.order),
+    }),
   }),
 });
 
-export const { useGetFaqsQuery } = faqApi;
+export const { useGetFaqsQuery, useGetCompetitionFAQsQuery } = faqApi;
