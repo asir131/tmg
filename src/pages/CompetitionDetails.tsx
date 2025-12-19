@@ -607,7 +607,7 @@ export function CompetitionDetails() {
                   <label className="text-sm text-text-secondary block mb-2">
                     Quick Select
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 mb-3">
                     {[20, 50, 80, 100].map((ticketCount) => {
                       const isDisabled = ticketCount > competition.max_per_person;
                       const isSelected = quantity === ticketCount;
@@ -632,6 +632,41 @@ export function CompetitionDetails() {
                         </button>
                       );
                     })}
+                  </div>
+                  {/* Custom Number Input */}
+                  <div>
+                    <label className="text-sm text-text-secondary block mb-2">
+                      Or enter custom number
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={competition.max_per_person}
+                      value={quantity}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value, 10);
+                        if (!isNaN(value) && value >= 1) {
+                          setQuantity(Math.min(value, competition.max_per_person));
+                        } else if (e.target.value === '') {
+                          setQuantity(1);
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const value = parseInt(e.target.value, 10);
+                        if (isNaN(value) || value < 1) {
+                          setQuantity(1);
+                        } else if (value > competition.max_per_person) {
+                          setQuantity(competition.max_per_person);
+                        }
+                      }}
+                      className="w-full px-4 py-3 bg-gradient-end rounded-xl border border-gray-700 focus:border-accent focus:outline-none transition-colors text-center text-lg font-semibold"
+                      placeholder="Enter number"
+                    />
+                    {quantity > competition.max_per_person && (
+                      <p className="text-red-400 text-xs mt-1 text-center">
+                        Maximum {competition.max_per_person} tickets allowed
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-3 mb-6 p-4 bg-gradient-end rounded-xl">
