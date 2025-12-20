@@ -23,7 +23,10 @@ import { useAddToCartMutation } from "../store/api/cartApi";
 import { useGetCompetitionFAQsQuery } from "../store/api/faqApi";
 import { useGetPostalEntryQuery } from "../store/api/postalEntryApi";
 import { useGetTermsQuery } from "../store/api/termsApi";
-import { isCompetitionBlocked, addBlockedCompetition } from "../utils/blockedCompetitions";
+import {
+  isCompetitionBlocked,
+  addBlockedCompetition,
+} from "../utils/blockedCompetitions";
 
 export function CompetitionDetails() {
   const { id } = useParams<{ id: string }>();
@@ -57,12 +60,13 @@ export function CompetitionDetails() {
   } = useGetPostalEntryQuery(id || "", {
     skip: !id,
   });
-  
+
   // Check if postal error is 404 (not found) - this means no postal entry exists
   // RTK Query errors have a 'status' property for HTTP errors
-  const isPostalNotFound = postalError && 
-    typeof postalError === 'object' && 
-    'status' in postalError && 
+  const isPostalNotFound =
+    postalError &&
+    typeof postalError === "object" &&
+    "status" in postalError &&
     postalError.status === 404;
   const {
     data: termsSections,
@@ -84,11 +88,12 @@ export function CompetitionDetails() {
   // Helper function to check if error is a wrong answer error
   const isWrongAnswerError = (error: any): boolean => {
     return (
-      error?.data?.code === 'WRONG_ANSWER' ||
-      error?.data?.code === 'INCORRECT_ANSWER' ||
-      error?.data?.message?.toLowerCase().includes('incorrect answer') ||
-      error?.data?.message?.toLowerCase().includes('wrong answer') ||
-      (error?.status === 403 && error?.data?.message?.toLowerCase().includes('answer'))
+      error?.data?.code === "WRONG_ANSWER" ||
+      error?.data?.code === "INCORRECT_ANSWER" ||
+      error?.data?.message?.toLowerCase().includes("incorrect answer") ||
+      error?.data?.message?.toLowerCase().includes("wrong answer") ||
+      (error?.status === 403 &&
+        error?.data?.message?.toLowerCase().includes("answer"))
     );
   };
 
@@ -125,7 +130,9 @@ export function CompetitionDetails() {
       return;
     }
     if (isBlocked) {
-      toast.error("You are blocked from purchasing tickets for this competition.");
+      toast.error(
+        "You are blocked from purchasing tickets for this competition."
+      );
       return;
     }
     setShowPurchaseModal(true);
@@ -142,7 +149,9 @@ export function CompetitionDetails() {
       return;
     }
     if (isBlocked) {
-      toast.error("You are blocked from purchasing tickets for this competition.");
+      toast.error(
+        "You are blocked from purchasing tickets for this competition."
+      );
       return;
     }
     try {
@@ -154,12 +163,13 @@ export function CompetitionDetails() {
       toast.success("Added to cart.");
     } catch (err: any) {
       console.error("Failed to add to cart:", err);
-      
+
       // Check if error is due to wrong answer
       if (isWrongAnswerError(err)) {
         addBlockedCompetition(competition._id);
         setIsBlocked(true);
-        const errorMessage = "Incorrect answer. You are now permanently blocked from purchasing tickets for this competition.";
+        const errorMessage =
+          "Incorrect answer. You are now permanently blocked from purchasing tickets for this competition.";
         setApiError(errorMessage);
         toast.error(errorMessage);
       } else if (err.data && err.data.message) {
@@ -174,21 +184,21 @@ export function CompetitionDetails() {
   // Format date helper
   const formatDate = (isoString: string) => {
     const date = new Date(isoString);
-    return date.toLocaleString('en-GB', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return date.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   // Format currency helper
   const formatCurrency = (amount: number) => {
-    if (amount === 0) return 'Free';
-    return new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: 'GBP',
+    if (amount === 0) return "Free";
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
     }).format(amount);
   };
 
@@ -236,9 +246,7 @@ export function CompetitionDetails() {
               </div>
             </div>
             <div className="ml-auto">
-              <CountdownTimer
-                endDate={new Date(competition.draw_countdown)}
-              />
+              <CountdownTimer endDate={new Date(competition.draw_countdown)} />
             </div>
           </div>
         </motion.div>
@@ -261,18 +269,14 @@ export function CompetitionDetails() {
             className="lg:col-span-2"
           >
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
               {[
                 {
                   icon: TicketIcon,
                   label: "Total Tickets",
                   value: competition.max_tickets.toLocaleString(),
                 },
-                {
-                  icon: UsersIcon,
-                  label: "Tickets Sold",
-                  value: competition.tickets_sold.toLocaleString(),
-                },
+
                 {
                   icon: TrophyIcon,
                   label: "Cash Alternative",
@@ -322,13 +326,13 @@ export function CompetitionDetails() {
               }}
               className="card-premium p-6 mb-8"
             >
-              <div className="flex justify-between mb-2">
+              <div className="flex justify-between mb-3">
                 <span className="text-text-secondary">
                   Competition Progress
                 </span>
                 <span className="font-bold">{progressPercentage}% Sold</span>
               </div>
-              <div className="w-full h-3 bg-gradient-end rounded-full overflow-hidden">
+              <div className="w-full h-3 mb-1 bg-gradient-end rounded-full overflow-hidden">
                 <motion.div
                   initial={{
                     width: 0,
@@ -342,10 +346,6 @@ export function CompetitionDetails() {
                   }}
                   className="h-full bg-accent"
                 />
-              </div>
-              <div className="text-sm text-text-secondary mt-2">
-                {competition.max_tickets - competition.tickets_sold} tickets
-                remaining
               </div>
             </motion.div>
             {/* Entry Type Tabs */}
@@ -385,16 +385,26 @@ export function CompetitionDetails() {
                     setEntryType("postal");
                     if (postalEntry) {
                       setShowPostalModal(true);
-                    } else if (!isPostalLoading && !isPostalNotFound && postalError) {
+                    } else if (
+                      !isPostalLoading &&
+                      !isPostalNotFound &&
+                      postalError
+                    ) {
                       toast.error("Failed to load postal entry instructions.");
                     }
                   }}
-                  disabled={!postalEntry && !isPostalLoading && !isPostalNotFound}
+                  disabled={
+                    !postalEntry && !isPostalLoading && !isPostalNotFound
+                  }
                   className={`flex-1 px-6 py-4 text-sm font-medium transition-all relative ${
                     entryType === "postal"
                       ? "text-white"
                       : "text-text-secondary hover:text-white"
-                  } ${!postalEntry && !isPostalLoading && !isPostalNotFound ? "opacity-50 cursor-not-allowed" : ""}`}
+                  } ${
+                    !postalEntry && !isPostalLoading && !isPostalNotFound
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
                 >
                   Postal Entry
                   {entryType === "postal" && (
@@ -519,7 +529,10 @@ export function CompetitionDetails() {
                       </p>
                     )}
                     {termsSections?.map((section, index) => (
-                      <div key={section.id || index} className="card-premium p-4">
+                      <div
+                        key={section.id || index}
+                        className="card-premium p-4"
+                      >
                         <h3 className="font-semibold mb-2">
                           {index + 1}. {section.title}
                         </h3>
@@ -567,9 +580,12 @@ export function CompetitionDetails() {
               )}
               {isBlocked && (
                 <div className="card-premium p-6 mb-6">
-                  <h3 className="text-xl font-bold mb-4 text-red-400">Answer to Enter</h3>
+                  <h3 className="text-xl font-bold mb-4 text-red-400">
+                    Answer to Enter
+                  </h3>
                   <p className="text-text-secondary">
-                    You are blocked from purchasing tickets for this competition due to an incorrect answer.
+                    You are blocked from purchasing tickets for this competition
+                    due to an incorrect answer.
                   </p>
                 </div>
               )}
@@ -609,23 +625,29 @@ export function CompetitionDetails() {
                   </label>
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     {[20, 50, 80, 100].map((ticketCount) => {
-                      const isDisabled = ticketCount > competition.max_per_person;
+                      const isDisabled =
+                        ticketCount > competition.max_per_person;
                       const isSelected = quantity === ticketCount;
                       return (
                         <button
                           key={ticketCount}
                           onClick={() => {
                             if (!isDisabled) {
-                              setQuantity(Math.min(ticketCount, competition.max_per_person));
+                              setQuantity(
+                                Math.min(
+                                  ticketCount,
+                                  competition.max_per_person
+                                )
+                              );
                             }
                           }}
                           disabled={isDisabled}
                           className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                             isSelected
-                              ? 'bg-accent text-white'
+                              ? "bg-accent text-white"
                               : isDisabled
-                              ? 'bg-gradient-end text-text-secondary opacity-50 cursor-not-allowed'
-                              : 'bg-gradient-end hover:bg-gray-700 text-white border border-gray-700'
+                              ? "bg-gradient-end text-text-secondary opacity-50 cursor-not-allowed"
+                              : "bg-gradient-end hover:bg-gray-700 text-white border border-gray-700"
                           }`}
                         >
                           {ticketCount}
@@ -646,8 +668,10 @@ export function CompetitionDetails() {
                       onChange={(e) => {
                         const value = parseInt(e.target.value, 10);
                         if (!isNaN(value) && value >= 1) {
-                          setQuantity(Math.min(value, competition.max_per_person));
-                        } else if (e.target.value === '') {
+                          setQuantity(
+                            Math.min(value, competition.max_per_person)
+                          );
+                        } else if (e.target.value === "") {
                           setQuantity(1);
                         }
                       }}
@@ -693,7 +717,8 @@ export function CompetitionDetails() {
                 </div>
                 {isBlocked && (
                   <div className="mb-4 p-3 bg-red-500/20 rounded-lg text-red-400 text-sm border border-red-500/30">
-                    ⚠️ You are blocked from purchasing tickets for this competition due to an incorrect answer.
+                    ⚠️ You are blocked from purchasing tickets for this
+                    competition due to an incorrect answer.
                   </div>
                 )}
                 {!selectedAnswer && !isBlocked && (
@@ -800,17 +825,17 @@ export function CompetitionDetails() {
               onClick={(e) => e.stopPropagation()}
               className="card-premium p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             >
-              <h2 className="text-2xl font-bold mb-6">
-                {postalEntry.title}
-              </h2>
-              
+              <h2 className="text-2xl font-bold mb-6">{postalEntry.title}</h2>
+
               {/* Instructions */}
               <div className="space-y-4 text-text-secondary mb-6">
                 <div>
-                  <h3 className="font-semibold text-white mb-2">Instructions</h3>
-                  <div 
+                  <h3 className="font-semibold text-white mb-2">
+                    Instructions
+                  </h3>
+                  <div
                     className="whitespace-pre-line"
-                    style={{ whiteSpace: 'pre-line' }}
+                    style={{ whiteSpace: "pre-line" }}
                   >
                     {postalEntry.instructions}
                   </div>
@@ -818,10 +843,12 @@ export function CompetitionDetails() {
 
                 {/* Postal Address */}
                 <div>
-                  <h3 className="font-semibold text-white mb-2">Postal Address</h3>
-                  <address 
+                  <h3 className="font-semibold text-white mb-2">
+                    Postal Address
+                  </h3>
+                  <address
                     className="whitespace-pre-line not-italic"
-                    style={{ whiteSpace: 'pre-line' }}
+                    style={{ whiteSpace: "pre-line" }}
                   >
                     {postalEntry.postal_address}
                   </address>
@@ -830,11 +857,19 @@ export function CompetitionDetails() {
                 {/* Deadline */}
                 <div>
                   <h3 className="font-semibold text-white mb-2">Deadline</h3>
-                  <p className={`${new Date(postalEntry.deadline) < new Date() ? 'text-red-400' : ''}`}>
+                  <p
+                    className={`${
+                      new Date(postalEntry.deadline) < new Date()
+                        ? "text-red-400"
+                        : ""
+                    }`}
+                  >
                     {formatDate(postalEntry.deadline)}
                   </p>
                   {new Date(postalEntry.deadline) < new Date() && (
-                    <p className="text-red-400 text-sm mt-1">⚠️ Deadline has passed</p>
+                    <p className="text-red-400 text-sm mt-1">
+                      ⚠️ Deadline has passed
+                    </p>
                   )}
                 </div>
 
