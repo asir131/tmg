@@ -1,6 +1,4 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements } from '@stripe/react-stripe-js';
 import { Layout } from './components/layout/Layout';
 import { Home } from './pages/Home';
 import { AllCompetitions } from './pages/AllCompetitions';
@@ -14,19 +12,17 @@ import { CompetitionLiveDetail } from './pages/CompetitionLiveDetail';
 import { Profile } from './pages/Profile';
 import { Checkout } from './pages/Checkout';
 import { PaymentSuccess } from './pages/PaymentSuccess';
+import { PaymentFailure } from './pages/PaymentFailure';
 import { TermsAndConditions } from './pages/TermsAndConditions';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { PrivateRoute } from './components/PrivateRoute';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '');
-
 export function App() {
   return (
-    <Elements stripe={stripePromise}>
-      <Router>
-        <Layout>
+    <Router>
+      <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
@@ -40,6 +36,7 @@ export function App() {
           <Route path="/live-draw/:id" element={<CompetitionLiveDetail />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/payment/failure" element={<PaymentFailure />} />
           <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route element={<PrivateRoute />}>
@@ -48,9 +45,8 @@ export function App() {
             <Route path="/profile/*" element={<Profile />} />
           </Route>
         </Routes>
-        </Layout>
-      </Router>
-    </Elements>
+      </Layout>
+    </Router>
   );
 }
 

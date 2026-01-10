@@ -1,15 +1,13 @@
-import { useState, Fragment, useEffect, useRef } from "react";
+import { useState, Fragment, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircleIcon, LockIcon, TrophyIcon } from "lucide-react";
-import { useStripe, Elements } from "@stripe/react-stripe-js";
-import { useNavigate } from "react-router-dom";
+import { CheckCircleIcon, TrophyIcon } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
   profileApi,
   useGetPointsSummaryQuery,
-  useRedeemPointsMutation,
 } from "../store/api/profileApi";
 import {
   useGetCartQuery,
@@ -17,24 +15,28 @@ import {
   useClearCartMutation,
 } from "../store/api/cartApi";
 import { usePaymentStatus } from "../hooks/usePaymentStatus";
-import { PaymentForm } from "../components/PaymentForm";
 import { AppDispatch } from "../store/store";
 import { CartSummary } from "../store/types";
 
 export function Checkout() {
-  const stripe = useStripe();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
   const [step, setStep] = useState(1);
   const [usePoints, setUsePoints] = useState(false);
-  const [pointsUsed, setPointsUsed] = useState(0);
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [pointsToRedeem, setPointsToRedeem] = useState(0);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(
+    searchParams.get("payment_intent_id")
+  );
   const [isProcessing, setIsProcessing] = useState(false);
-  const hasRedeemedPointsRef = useRef(false);
   const [checkoutSummary, setCheckoutSummary] = useState<CartSummary | null>(
     null
   );
+  const [checkoutResponse, setCheckoutResponse] = useState<{
+    discount_amount: number;
+    points_redeemed: number;
+    amount: number;
+  } | null>(null);
 
   const { data: pointsSummary, refetch: refetchPointsSummary } =
     useGetPointsSummaryQuery();
@@ -42,23 +44,26 @@ export function Checkout() {
   const [createCheckoutIntent, { isLoading: isCreatingIntent }] =
     useCreateCheckoutIntentMutation();
   const [clearCart] = useClearCartMutation();
-  const [redeemPoints] = useRedeemPointsMutation();
   const { status: paymentStatus } = usePaymentStatus(paymentIntentId);
 
   const availablePoints = pointsSummary?.total_points ?? 0;
   const cartSummary = cart?.summary ?? checkoutSummary;
   const cartTotal = cartSummary?.total_price ?? 0;
+  
+  // Calculate points to redeem based on user selection
   // Every 100 points = £1 discount
-  const pointsToRedeem = usePoints
+  const calculatedPointsToRedeem = usePoints
     ? Math.min(availablePoints, Math.floor(cartTotal * 100))
     : 0;
-  const pointsDiscount = pointsToRedeem / 100;
-  const finalAmount = Math.max(0, cartTotal - pointsDiscount);
+  
+  // Use discount from checkout response if available, otherwise calculate
+  const pointsDiscount = checkoutResponse?.discount_amount ?? (calculatedPointsToRedeem / 100);
+  const finalAmount = checkoutResponse?.amount ?? Math.max(0, cartTotal - pointsDiscount);
 
   useEffect(() => {
     if (!usePoints) {
-      setPointsUsed(0);
-      hasRedeemedPointsRef.current = false;
+      setPointsToRedeem(0);
+      setCheckoutResponse(null);
     }
   }, [usePoints]);
 
@@ -67,69 +72,43 @@ export function Checkout() {
     const paymentSucceeded =
       paymentStatus?.tickets_created || paymentStatus?.status === "succeeded";
 
-    if (paymentSucceeded && step === 3) {
+    if (paymentSucceeded && step === 2) {
       // Clear cart after successful payment
       clearCart();
-
-      // Redeem points after successful payment
-      if (usePoints && pointsUsed > 0 && !hasRedeemedPointsRef.current) {
-        hasRedeemedPointsRef.current = true;
-        (async () => {
-          try {
-            const res = await redeemPoints({
-              amount: pointsUsed,
-            }).unwrap();
-
-            // Update the points summary with the response data
-            if (res?.data) {
-              const { remaining_points, total_redeemed } = res.data;
-
-              dispatch(
-                profileApi.util.updateQueryData(
-                  "getPointsSummary",
-                  undefined,
-                  (draft) => {
-                    if (!draft) return;
-                    // Use the values from backend response
-                    if (typeof remaining_points === "number") {
-                      draft.total_points = remaining_points;
-                    }
-                    if (typeof total_redeemed === "number") {
-                      draft.total_redeemed = total_redeemed;
-                    }
-                  }
-                )
-              );
-            }
-
-            refetchPointsSummary();
-            dispatch(profileApi.util.invalidateTags(["Profile"]));
-          } catch (err: any) {
-            console.error("Failed to redeem points:", err);
-            console.error("Error details:", {
-              status: err?.status,
-              data: err?.data,
-              message: err?.data?.message,
-            });
-            toast.error(
-              err?.data?.message ||
-                err?.message ||
-                "Points redemption failed. Please contact support."
-            );
-          }
-        })();
+      
+      // Points were already redeemed during checkout intent creation
+      // Just refresh the points summary to reflect the updated balance
+      if (checkoutResponse?.points_redeemed && checkoutResponse.points_redeemed > 0) {
+        refetchPointsSummary();
+        dispatch(profileApi.util.invalidateTags(["Profile"]));
       }
     }
   }, [
     paymentStatus,
     step,
     clearCart,
-    usePoints,
-    pointsUsed,
+    checkoutResponse,
     dispatch,
     refetchPointsSummary,
-    redeemPoints,
   ]);
+
+  // Check if returning from payment
+  useEffect(() => {
+    const paymentIntentIdParam = searchParams.get("payment_intent_id");
+    const status = searchParams.get("status");
+    
+    if (paymentIntentIdParam) {
+      setPaymentIntentId(paymentIntentIdParam);
+      // If returning from payment, go to confirmation step
+      if (status === "succeeded" || status === "pending" || status === "processing") {
+        setStep(3);
+        setIsProcessing(status === "processing" || status === "pending");
+      } else if (status === "failed" || status === "canceled") {
+        // Redirect to failure page
+        navigate(`/payment/failure?payment_intent_id=${paymentIntentIdParam}&status=${status}`);
+      }
+    }
+  }, [searchParams, navigate]);
 
   const handleContinueToPayment = async () => {
     if (!cart || cart.cart_items.length === 0) {
@@ -137,31 +116,108 @@ export function Checkout() {
       return;
     }
 
-    // Create payment intent when moving to payment step
+    if (isCreatingIntent) {
+      return; // Prevent multiple clicks
+    }
+
+    // Create payment intent and redirect to Cashflows
     try {
       setCheckoutSummary(cart.summary);
-      const points_to_redeem = pointsToRedeem;
+      const points_to_redeem = usePoints
+        ? Math.min(availablePoints, Math.floor(cartTotal * 100))
+        : 0;
+      
       const intentResult = await createCheckoutIntent({
         points_to_redeem,
       }).unwrap();
-      setPointsUsed(points_to_redeem);
+      
+      // Store checkout response for later use (includes discount info)
+      setCheckoutResponse({
+        discount_amount: intentResult.discount_amount,
+        points_redeemed: intentResult.points_redeemed,
+        amount: intentResult.amount,
+      });
+      setPointsToRedeem(intentResult.points_redeemed);
 
-      console.log("Payment intent result:", intentResult); // Debug log
-
-      if (!intentResult?.payment_intent_id || !intentResult?.client_secret) {
+      if (!intentResult?.payment_intent_id || !intentResult?.checkout_url) {
         throw new Error("Invalid payment intent response");
       }
 
-      setPaymentIntentId(intentResult.payment_intent_id);
-      setClientSecret(intentResult.client_secret);
-      setStep(2);
+      // Redirect to Cashflows checkout page
+      window.location.href = intentResult.checkout_url;
     } catch (err: any) {
-      console.error("Payment intent creation error:", err); // Debug log
-      const message =
-        err?.data?.message ||
-        err?.message ||
-        "Failed to create payment intent. Please try again.";
-      toast.error(message);
+      // Log full error for debugging
+      console.error("[Checkout] Error creating payment intent:", {
+        status: err?.status,
+        data: err?.data,
+        error: err?.error,
+        message: err?.message,
+        originalError: err,
+        apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
+      });
+      
+      // Handle validation errors (matches backend guide)
+      if (err?.data?.errors && Array.isArray(err.data.errors)) {
+        // Show each validation error
+        err.data.errors.forEach((error: any) => {
+          const errorMessage = error.competition_title 
+            ? `${error.competition_title}: ${error.error}`
+            : error.error;
+          toast.error(errorMessage);
+        });
+      } else if (err?.status === 500 || err?.data?.status === 500) {
+        // Handle 500 Internal Server Error
+        const errorMessage = err?.data?.message || 
+          "Server error occurred. Please try again or contact support if the problem persists.";
+        toast.error(errorMessage);
+        
+        // Log detailed error information for backend team
+        console.error("[Checkout] 500 Server Error - Details for backend team:", {
+          endpoint: "/api/v1/payments/create-intent/checkout",
+          status: err?.status || err?.data?.status,
+          message: err?.data?.message,
+          error: err?.error,
+          responseData: err?.data,
+          cartItems: cart?.cart_items?.map(item => ({
+            competition_id: item.competition_id,
+            quantity: item.quantity,
+          })),
+          pointsToRedeem: usePoints
+            ? Math.min(availablePoints, Math.floor(cartTotal * 100))
+            : 0,
+        });
+      } else if (err?.status === 400 || err?.data?.status === 400) {
+        // Handle 400 Bad Request (validation errors, cart empty, etc.)
+        const message =
+          err?.data?.message ||
+          err?.message ||
+          "Invalid request. Please check your cart and try again.";
+        toast.error(message);
+      } else if (err?.status === 401 || err?.data?.status === 401) {
+        // Handle 401 Unauthorized
+        toast.error("Your session has expired. Please login again.");
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+      } else if (err?.status === 'FETCH_ERROR' || err?.error === 'TypeError: Failed to fetch') {
+        // Handle connection refused / network errors
+        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'not configured';
+        const errorMessage = 
+          "Cannot connect to the server. Please ensure the backend server is running.";
+        toast.error(errorMessage);
+        console.error("[Checkout] Connection Error:", {
+          error: err?.error,
+          apiBaseUrl: apiUrl,
+          message: "Backend server may not be running. Check if server is running on the configured port.",
+        });
+      } else {
+        // Handle other errors (network errors, etc.)
+        const message =
+          err?.data?.message ||
+          err?.message ||
+          "Failed to create payment intent. Please check your connection and try again.";
+        toast.error(message);
+      }
     }
   };
 
@@ -215,7 +271,7 @@ export function Checkout() {
           <h1 className="text-4xl font-bold mb-8">Checkout</h1>
           {/* Progress Steps */}
           <div className="flex items-center justify-center mb-8">
-            {[1, 2, 3].map((s) => (
+            {[1, 2].map((s) => (
               <Fragment key={s}>
                 <div
                   className={`flex items-center justify-center w-10 h-10 rounded-full ${
@@ -228,7 +284,7 @@ export function Checkout() {
                     <span>{s}</span>
                   )}
                 </div>
-                {s < 3 && (
+                {s < 2 && (
                   <div
                     className={`w-24 h-1 ${
                       step > s ? "bg-accent" : "bg-gradient-end"
@@ -315,106 +371,42 @@ export function Checkout() {
                 </div>
                 <button
                   onClick={handleContinueToPayment}
-                  className="w-full btn-premium"
+                  disabled={isCreatingIntent}
+                  className="w-full btn-premium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  Continue to Payment
+                  {isCreatingIntent ? (
+                    <>
+                      <svg
+                        className="animate-spin h-5 w-5"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Creating Payment...
+                    </>
+                  ) : (
+                    "Continue to Payment"
+                  )}
                 </button>
               </div>
             </motion.div>
           )}
-          {/* Step 2: Payment */}
+          {/* Step 2: Confirmation */}
           {step === 2 && (
-            <motion.div
-              key="step2"
-              initial={{
-                opacity: 0,
-                x: 20,
-              }}
-              animate={{
-                opacity: 1,
-                x: 0,
-              }}
-              exit={{
-                opacity: 0,
-                x: -20,
-              }}
-              className="space-y-6"
-            >
-              <div className="card-premium p-6">
-                <h2 className="text-2xl font-bold mb-6">Payment Method</h2>
-                {isCreatingIntent ? (
-                  <div className="mb-6 text-center py-8">
-                    <p className="text-text-secondary">
-                      Preparing payment form...
-                    </p>
-                  </div>
-                ) : !clientSecret ? (
-                  <div className="mb-6 text-center py-8">
-                    <p className="text-red-500 mb-4">
-                      Failed to initialize payment. Please try again.
-                    </p>
-                    <button
-                      onClick={() => {
-                        setStep(1);
-                        setClientSecret(null);
-                        setPaymentIntentId(null);
-                      }}
-                      className="btn-premium"
-                    >
-                      Go Back
-                    </button>
-                  </div>
-                ) : clientSecret && stripe ? (
-                  <Elements
-                    stripe={stripe}
-                    options={{
-                      clientSecret,
-                      appearance: {
-                        theme: "night",
-                        variables: {
-                          colorPrimary: "#6366f1",
-                        },
-                      },
-                    }}
-                  >
-                    <PaymentForm
-                      clientSecret={clientSecret}
-                      paymentIntentId={paymentIntentId!}
-                      onComplete={async () => {
-                        setStep(3);
-                        setIsProcessing(true);
-                      }}
-                      onError={(message) => {
-                        toast.error(message);
-                        setIsProcessing(false);
-                      }}
-                      amount={finalAmount}
-                      isCreatingIntent={isCreatingIntent}
-                      onBack={() => {
-                        setStep(1);
-                        setClientSecret(null);
-                        setPaymentIntentId(null);
-                      }}
-                    />
-                  </Elements>
-                ) : (
-                  <div className="mb-6 text-center py-8">
-                    <p className="text-red-500">
-                      Failed to initialize payment. Please try again.
-                    </p>
-                    <button
-                      onClick={() => setStep(1)}
-                      className="mt-4 btn-premium"
-                    >
-                      Go Back
-                    </button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-          {/* Step 3: Confirmation */}
-          {step === 3 && (
             <motion.div
               key="step3"
               initial={{
@@ -446,13 +438,13 @@ export function Checkout() {
                     }}
                     className="w-24 h-24 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-6"
                   >
-                    <LockIcon className="w-12 h-12 text-accent animate-pulse" />
+                    <CheckCircleIcon className="w-12 h-12 text-accent animate-pulse" />
                   </motion.div>
                   <h2 className="text-3xl font-bold mb-4">
                     Processing your payment...
                   </h2>
                   <p className="text-text-secondary mb-4">
-                    Please wait while we create your tickets.
+                    Please wait while we confirm your payment and create your tickets.
                   </p>
                   {paymentStatus && (
                     <div className="text-sm text-text-secondary space-y-2 mb-4 p-4 bg-gradient-end rounded-lg">
@@ -479,7 +471,7 @@ export function Checkout() {
                           </p>
                           <ul className="list-disc list-inside mt-2 space-y-1">
                             <li>
-                              The Stripe webhook is not configured or not
+                              The payment webhook is not configured or not
                               working
                             </li>
                             <li>
@@ -491,8 +483,7 @@ export function Checkout() {
                             </li>
                           </ul>
                           <p className="mt-2">
-                            Please check the backend webhook configuration. See
-                            WEBHOOK_TROUBLESHOOTING.md for details.
+                            Please check the backend webhook configuration.
                           </p>
                         </div>
                       )}
@@ -511,8 +502,7 @@ export function Checkout() {
                       Check My Entries (Payment may have succeeded)
                     </button>
                     <p className="text-xs text-text-secondary text-center">
-                      If tickets aren't there, the webhook may not be
-                      configured. Contact support with Payment ID:{" "}
+                      If tickets aren't there, please contact support with Payment ID:{" "}
                       <span className="font-mono text-xs">
                         {paymentIntentId?.slice(0, 20)}...
                       </span>

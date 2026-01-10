@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MailIcon, LockIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
 import { useLoginUserMutation } from '../store/api/authApi';
@@ -11,6 +11,8 @@ export function Login() {
   const [apiErrorMessage, setApiErrorMessage] = useState<any>(null);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect');
   const [loginUser, { isLoading }] = useLoginUserMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,7 +25,8 @@ export function Login() {
       if(response.data.accessToken && response.data.refreshToken) {
         localStorage.setItem('accessToken', response.data.accessToken);
         localStorage.setItem('refreshToken', response.data.refreshToken);
-        navigate('/');
+        // Redirect to the specified path or home
+        navigate(redirectTo || '/');
       }
 
     } catch (err) {

@@ -1,11 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { XIcon, LockIcon, LoaderIcon } from "lucide-react";
-import { useStripe, PaymentElement, Elements } from "@stripe/react-stripe-js";
-import { useNavigate } from "react-router-dom";
+import { XIcon, LoaderIcon } from "lucide-react";
 import { toast } from "react-toastify";
 import { useCreateSinglePurchaseIntentMutation } from "../store/api/cartApi";
-import { PaymentForm } from "./PaymentForm";
 import { addBlockedCompetition } from "../utils/blockedCompetitions";
 
 interface SinglePurchaseModalProps {
@@ -29,10 +26,6 @@ export function SinglePurchaseModal({
   answer,
   onBlocked,
 }: SinglePurchaseModalProps) {
-  const stripe = useStripe();
-  const navigate = useNavigate();
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
 
   const [createSinglePurchaseIntent] = useCreateSinglePurchaseIntentMutation();
@@ -52,14 +45,12 @@ export function SinglePurchaseModal({
 
   // Create payment intent when modal opens
   useEffect(() => {
-    if (isOpen && !clientSecret && !isCreatingIntent) {
+    if (isOpen && !isCreatingIntent) {
       createPaymentIntent();
     }
     
     // Reset when modal closes
     if (!isOpen) {
-      setClientSecret(null);
-      setPaymentIntentId(null);
       setIsCreatingIntent(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -74,8 +65,12 @@ export function SinglePurchaseModal({
         answer: answer,
       }).unwrap();
 
-      setPaymentIntentId(intentResult.payment_intent_id);
-      setClientSecret(intentResult.client_secret);
+      // Redirect to Cashflows checkout page
+      if (intentResult.checkout_url) {
+        window.location.href = intentResult.checkout_url;
+      } else {
+        throw new Error("No checkout URL received");
+      }
     } catch (err: any) {
       // Check if error is due to wrong answer
       if (isWrongAnswerError(err)) {
@@ -148,50 +143,9 @@ export function SinglePurchaseModal({
             {isCreatingIntent ? (
               <div className="mb-6 text-center py-8">
                 <LoaderIcon className="w-8 h-8 animate-spin mx-auto mb-4 text-accent" />
-                <p className="text-text-secondary">Preparing payment form...</p>
+                <p className="text-text-secondary">Redirecting to payment...</p>
               </div>
-            ) : !clientSecret || !stripe ? (
-              <div className="mb-6 text-center py-8">
-                <p className="text-red-500 mb-4">Failed to initialize payment. Please try again.</p>
-                <button onClick={onClose} className="btn-premium">
-                  Close
-                </button>
-              </div>
-            ) : (
-              <Elements
-                stripe={stripe}
-                options={{
-                  clientSecret,
-                  appearance: {
-                    theme: 'night',
-                    variables: {
-                      colorPrimary: '#6366f1',
-                    },
-                  },
-                }}
-              >
-                <PaymentForm
-                  clientSecret={clientSecret}
-                  paymentIntentId={paymentIntentId!}
-                  onComplete={async () => {
-                    navigate(
-                      `/payment/success?payment_intent_id=${paymentIntentId}`
-                    );
-                    onClose();
-                  }}
-                  onError={(message) => {
-                    toast.error(message);
-                  }}
-                  amount={total}
-                  isCreatingIntent={false}
-                  onBack={() => {
-                    onClose();
-                    setClientSecret(null);
-                    setPaymentIntentId(null);
-                  }}
-                />
-              </Elements>
-            )}
+            ) : null}
           </div>
         </motion.div>
       </motion.div>

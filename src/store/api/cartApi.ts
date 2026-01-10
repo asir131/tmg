@@ -37,7 +37,7 @@ export const cartApi = api.injectEndpoints({
     createCheckoutIntent: builder.mutation<
       {
         payment_intent_id: string;
-        client_secret: string;
+        checkout_url: string;
         amount: number;
         currency: string;
         cart_total: number;
@@ -56,7 +56,7 @@ export const cartApi = api.injectEndpoints({
         message: string;
         data: {
           payment_intent_id: string;
-          client_secret: string;
+          checkout_url: string;
           amount: number;
           currency: string;
           cart_total: number;
@@ -68,7 +68,7 @@ export const cartApi = api.injectEndpoints({
     createSinglePurchaseIntent: builder.mutation<
       {
         payment_intent_id: string;
-        client_secret: string;
+        checkout_url: string;
         amount: number;
         currency: string;
       },
@@ -84,7 +84,7 @@ export const cartApi = api.injectEndpoints({
         message: string;
         data: {
           payment_intent_id: string;
-          client_secret: string;
+          checkout_url: string;
           amount: number;
           currency: string;
         }
@@ -99,6 +99,9 @@ export const cartApi = api.injectEndpoints({
         tickets_created: boolean;
         created_at: string;
         updated_at: string;
+        last_checked_at?: string;
+        cashflows_checked?: boolean;
+        cashflows_status?: string;
       },
       string
     >({
