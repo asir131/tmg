@@ -45,7 +45,7 @@ export function Signup() {
         localStorage.setItem('accessToken', response.data.accessToken);
         localStorage.setItem('refreshToken', response.data.refreshToken);
         alert('Registration successful!'); // Keeping alert for success as it was explicitly there before
-        navigate('/');
+        navigate('/verify-otp', { state: { email: formData.email } });
       }
 
     } catch (err) {

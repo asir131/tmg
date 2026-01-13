@@ -17,6 +17,9 @@ import { TermsAndConditions } from './pages/TermsAndConditions';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
+import { VerifyOtp } from './pages/VerifyOtp';
+import { ForgotPassword } from './pages/ForgotPassword';
+import { ResetPassword } from './pages/ResetPassword';
 import { PrivateRoute } from './components/PrivateRoute';
 
 export function App() {
@@ -27,7 +30,10 @@ export function App() {
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/competitions" element={<AllCompetitions />} />
           <Route path="/competition/:id" element={<CompetitionDetails />} />
           <Route path="/winners" element={<Winners />} />
