@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MailIcon } from 'lucide-react';
 import { useForgotPasswordMutation } from '../store/api/authApi';
@@ -9,7 +9,6 @@ export function ForgotPassword() {
   const [apiMessage, setApiMessage] = useState<string | null>(null);
   const [apiErrorMessage, setApiErrorMessage] = useState<string | null>(null);
   const [forgotPassword, { isLoading }] = useForgotPasswordMutation();
-  const navigate = useNavigate();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -19,9 +18,6 @@ export function ForgotPassword() {
     try {
       const response = await forgotPassword({ email }).unwrap();
       setApiMessage(response.data?.message || response.message);
-      if (response.data?.resetToken) {
-        navigate('/reset-password', { state: { resetToken: response.data.resetToken } });
-      }
     } catch (error) {
       const message =
         (error as { data?: { message?: string } })?.data?.message ||

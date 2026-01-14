@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LockIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
 import { useResetPasswordMutation } from '../store/api/authApi';
@@ -10,7 +10,12 @@ export function ResetPassword() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const location = useLocation();
-  const resetToken = (location.state as { resetToken?: string } | null)?.resetToken;
+  const [searchParams] = useSearchParams();
+  const resetToken = useMemo(() => {
+    const tokenFromQuery = searchParams.get('token') || searchParams.get('resetToken');
+    const tokenFromState = (location.state as { resetToken?: string } | null)?.resetToken;
+    return tokenFromQuery || tokenFromState;
+  }, [location.state, searchParams]);
   const navigate = useNavigate();
   const [resetPassword, { isLoading }] = useResetPasswordMutation();
 
