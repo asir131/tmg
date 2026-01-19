@@ -18,6 +18,8 @@ import {
   useGetPurchaseHistoryQuery,
 } from "../store/api/profileApi";
 import { useLogoutUserMutation } from "../store/api/authApi";
+import { PhoneNumberInput } from "../components/PhoneNumberInput";
+import { validateUKPhoneNumber, normalizePhoneNumber } from "../utils/phoneValidation";
 
 export function Profile() {
   const [activeSection, setActiveSection] = useState("account");
@@ -70,6 +72,7 @@ export function Profile() {
   const [phone, setPhone] = useState("+44 7700 900000");
   const [address, setAddress] = useState("123 Competition Street, London, UK");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string>('');
 
   const menuItems = [
     { id: "account", label: "Account Info", icon: UserIcon },
@@ -127,16 +130,29 @@ export function Profile() {
   const handleEditOrSave = async () => {
     if (!isEditing) {
       setStatusMessage(null);
+      setPhoneError('');
       setIsEditing(true);
       return;
     }
+    
     setStatusMessage(null);
+    setPhoneError('');
+    
+    // Phone number is optional for updates, but if provided, must be valid
+    if (phone && phone.trim()) {
+      const normalizedPhone = normalizePhoneNumber(phone);
+      if (!validateUKPhoneNumber(normalizedPhone)) {
+        setPhoneError('Please enter a valid UK phone number');
+        return;
+      }
+    }
+    
     const name = `${firstName} ${lastName}`.trim();
     try {
       await updateProfile({
         name,
         email,
-        phone_number: phone,
+        phone_number: phone && phone.trim() ? normalizePhoneNumber(phone) : null,
         location: address,
       }).unwrap();
       setIsEditing(false);
@@ -313,16 +329,30 @@ export function Profile() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-text-secondary mb-2">
-                      Phone
-                    </label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      readOnly={!isEditing}
-                      className="w-full px-4 py-3 bg-gradient-end rounded-xl border border-gray-700"
-                    />
+                    {isEditing ? (
+                      <PhoneNumberInput
+                        value={phone}
+                        onChange={(value) => {
+                          setPhone(value);
+                          setPhoneError('');
+                        }}
+                        error={phoneError}
+                        required={false}
+                        disabled={false}
+                      />
+                    ) : (
+                      <>
+                        <label className="block text-sm text-text-secondary mb-2">
+                          Phone
+                        </label>
+                        <input
+                          type="tel"
+                          value={phone || 'Not provided'}
+                          readOnly={true}
+                          className="w-full px-4 py-3 bg-gradient-end rounded-xl border border-gray-700"
+                        />
+                      </>
+                    )}
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm text-text-secondary mb-2">

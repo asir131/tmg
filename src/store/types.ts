@@ -72,6 +72,7 @@ export interface User {
   lastName?: string;
   email: string;
   password?: string;
+  phone_number?: string | null;  // Added for phone number support
   role?: string;
   verified?: boolean;
 }

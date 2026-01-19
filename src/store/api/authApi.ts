@@ -34,13 +34,14 @@ export interface ResetPasswordResponse {
 export const authApi = api.injectEndpoints({
   endpoints: (builder) => ({
     registerUser: builder.mutation<AuthResponse, Partial<User>>({
-      query: ({ firstName, lastName, email, password }) => ({
+      query: ({ firstName, lastName, email, password, phone_number }) => ({
         url: 'auth/register',
         method: 'POST',
         body: {
           name: `${firstName} ${lastName}`,
           email,
           password,
+          phone_number,  // Added phone_number field
         },
       }),
     }),

@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { UserIcon, MailIcon, LockIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
 import { useRegisterUserMutation } from '../store/api/authApi';
+import { PhoneNumberInput } from '../components/PhoneNumberInput';
+import { validateUKPhoneNumber, normalizePhoneNumber } from '../utils/phoneValidation';
 
 export function Signup() {
   const [formData, setFormData] = useState({
@@ -10,12 +12,14 @@ export function Signup() {
     lastName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    phone_number: ''  // Added phone_number field
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [apiErrorMessage, setApiErrorMessage] = useState<any>(null)
+  const [apiErrorMessage, setApiErrorMessage] = useState<any>(null);
+  const [phoneError, setPhoneError] = useState<string>('')
   
   const navigate = useNavigate();
   const [registerUser, { isLoading }] = useRegisterUserMutation(); // Removed 'error' from destructuring
@@ -23,6 +27,7 @@ export function Signup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setApiErrorMessage(null); // Clear previous errors
+    setPhoneError(''); // Clear phone error
 
     if (formData.password !== formData.confirmPassword) {
       setApiErrorMessage("Passwords do not match!");
@@ -33,12 +38,25 @@ export function Signup() {
       return;
     }
 
+    // Validate phone number
+    if (!formData.phone_number) {
+      setPhoneError('Phone number is required');
+      return;
+    }
+
+    const normalizedPhone = normalizePhoneNumber(formData.phone_number);
+    if (!validateUKPhoneNumber(normalizedPhone)) {
+      setPhoneError('Please enter a valid UK phone number (10 digits)');
+      return;
+    }
+
     try {
       const response = await registerUser({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        phone_number: normalizedPhone  // Added phone_number to registration
       }).unwrap();
       
       if(response.data.accessToken && response.data.refreshToken) {
@@ -103,6 +121,17 @@ export function Signup() {
                   <MailIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-text-secondary w-5 h-5" />
                   <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="your.email@example.com" className="w-full pl-12 pr-4 py-3 bg-gradient-end rounded-xl border border-gray-700 focus:border-accent focus:outline-none transition-colors" required />
                 </div>
+              </div>
+              <div>
+                <PhoneNumberInput
+                  value={formData.phone_number}
+                  onChange={(value) => {
+                    setFormData({ ...formData, phone_number: value });
+                    setPhoneError(''); // Clear error when user types
+                  }}
+                  error={phoneError}
+                  required={true}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">
