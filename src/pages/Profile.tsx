@@ -600,7 +600,7 @@ export function Profile() {
               >
                 <h2 className="text-2xl font-bold mb-6">Settings</h2>
                 <div className="space-y-6">
-                  <div>
+                  <div className="relative">
                     <h3 className="text-lg font-semibold mb-4">
                       Notifications
                     </h3>
@@ -623,29 +623,13 @@ export function Profile() {
                         </label>
                       ))}
                     </div>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Privacy</h3>
-                    <div className="space-y-3">
-                      {[
-                        "Show my name on winners list",
-                        "Allow profile to be public",
-                      ].map((item, index) => (
-                        <label
-                          key={index}
-                          className="flex items-center justify-between p-4 bg-gradient-end rounded-xl cursor-pointer hover:bg-gray-800 transition-colors"
-                        >
-                          <span>{item}</span>
-                          <input
-                            type="checkbox"
-                            defaultChecked={index === 0}
-                            className="w-5 h-5 rounded border-gray-700 text-accent focus:ring-accent"
-                          />
-                        </label>
-                      ))}
+                    {/* Coming Soon Overlay */}
+                    <div className="absolute inset-0 backdrop-blur-sm bg-black/30 rounded-xl flex items-center justify-center">
+                      <div className="bg-gradient-start border border-accent/50 px-8 py-4 rounded-xl shadow-lg">
+                        <h3 className="text-2xl font-bold text-white">Coming Soon</h3>
+                      </div>
                     </div>
                   </div>
-                  <button className="w-full btn-premium">Save Settings</button>
                 </div>
               </motion.div>
             )}
