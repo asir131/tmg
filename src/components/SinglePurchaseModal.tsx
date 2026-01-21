@@ -27,6 +27,8 @@ export function SinglePurchaseModal({
   onBlocked,
 }: SinglePurchaseModalProps) {
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoError, setPromoError] = useState('');
 
   const [createSinglePurchaseIntent] = useCreateSinglePurchaseIntentMutation();
 
@@ -43,26 +45,24 @@ export function SinglePurchaseModal({
     );
   };
 
-  // Create payment intent when modal opens
+  // Reset state when modal closes
   useEffect(() => {
-    if (isOpen && !isCreatingIntent) {
-      createPaymentIntent();
-    }
-    
-    // Reset when modal closes
     if (!isOpen) {
       setIsCreatingIntent(false);
+      setPromoCode('');
+      setPromoError('');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const createPaymentIntent = async () => {
     setIsCreatingIntent(true);
+    setPromoError('');
     try {
       const intentResult = await createSinglePurchaseIntent({
         competition_id: competitionId,
         quantity: quantity,
         answer: answer,
+        promo_code: promoCode.trim() || undefined, // Only send if not empty
       }).unwrap();
 
       // Redirect to Cashflows checkout page
@@ -79,6 +79,11 @@ export function SinglePurchaseModal({
         const errorMessage = "Incorrect answer. You are now permanently blocked from purchasing tickets for this competition.";
         toast.error(errorMessage);
         onClose();
+      } else if (err?.data?.code === 'PROMO_CODE_ERROR' || err?.data?.message?.toLowerCase().includes('promo')) {
+        // Handle promo code errors - don't close modal, let user fix
+        const errorMessage = err?.data?.message || 'Invalid promo code';
+        setPromoError(errorMessage);
+        toast.error(errorMessage);
       } else {
         const message =
           err?.data?.message ||
@@ -140,12 +145,49 @@ export function SinglePurchaseModal({
               </div>
             </div>
 
+            {/* Promo Code Input */}
+            {!isCreatingIntent && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium mb-2">
+                  Promo Code (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => {
+                    setPromoCode(e.target.value.toUpperCase());
+                    setPromoError('');
+                  }}
+                  placeholder="Enter promo code"
+                  className="w-full px-4 py-3 bg-gradient-end rounded-xl border border-gray-700 focus:border-accent focus:outline-none transition-colors uppercase"
+                  disabled={isCreatingIntent}
+                />
+                {promoError && (
+                  <p className="text-red-400 text-sm mt-2">{promoError}</p>
+                )}
+                <p className="text-text-secondary text-xs mt-2">
+                  If you have a promo code, enter it above before proceeding to payment
+                </p>
+              </div>
+            )}
+
             {isCreatingIntent ? (
               <div className="mb-6 text-center py-8">
                 <LoaderIcon className="w-8 h-8 animate-spin mx-auto mb-4 text-accent" />
                 <p className="text-text-secondary">Redirecting to payment...</p>
+                {promoCode && (
+                  <p className="text-sm text-accent mt-2">Applying promo code: {promoCode}</p>
+                )}
               </div>
-            ) : null}
+            ) : (
+              <button
+                onClick={createPaymentIntent}
+                disabled={isCreatingIntent}
+                className="w-full btn-premium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Proceed to Payment
+              </button>
+            )}
           </div>
         </motion.div>
       </motion.div>

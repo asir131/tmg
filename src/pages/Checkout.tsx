@@ -25,6 +25,8 @@ export function Checkout() {
   const [step, setStep] = useState(1);
   const [usePoints, setUsePoints] = useState(false);
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoError, setPromoError] = useState('');
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(
     searchParams.get("payment_intent_id")
   );
@@ -36,6 +38,8 @@ export function Checkout() {
     discount_amount: number;
     points_redeemed: number;
     amount: number;
+    promo_discount: number;
+    promo_code_applied: string | null;
   } | null>(null);
 
   const { data: pointsSummary, refetch: refetchPointsSummary } =
@@ -123,12 +127,14 @@ export function Checkout() {
     // Create payment intent and redirect to Cashflows
     try {
       setCheckoutSummary(cart.summary);
+      setPromoError('');
       const points_to_redeem = usePoints
         ? Math.min(availablePoints, Math.floor(cartTotal * 100))
         : 0;
       
       const intentResult = await createCheckoutIntent({
         points_to_redeem,
+        promo_code: promoCode.trim() || undefined, // Only send if not empty
       }).unwrap();
       
       // Store checkout response for later use (includes discount info)
@@ -136,6 +142,8 @@ export function Checkout() {
         discount_amount: intentResult.discount_amount,
         points_redeemed: intentResult.points_redeemed,
         amount: intentResult.amount,
+        promo_discount: intentResult.promo_discount || 0,
+        promo_code_applied: intentResult.promo_code_applied,
       });
       setPointsToRedeem(intentResult.points_redeemed);
 
@@ -155,6 +163,14 @@ export function Checkout() {
         originalError: err,
         apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
       });
+      
+      // Handle promo code specific errors
+      if (err?.data?.code === 'PROMO_CODE_ERROR' || err?.data?.message?.toLowerCase().includes('promo')) {
+        const errorMessage = err?.data?.message || 'Invalid promo code';
+        setPromoError(errorMessage);
+        toast.error(errorMessage);
+        return; // Don't close modal, let user fix promo code
+      }
       
       // Handle validation errors (matches backend guide)
       if (err?.data?.errors && Array.isArray(err.data.errors)) {
@@ -337,6 +353,31 @@ export function Checkout() {
                     </div>
                   ))}
                 </div>
+                {/* Promo Code Input */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium mb-2">
+                    Promo Code (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={promoCode}
+                    onChange={(e) => {
+                      setPromoCode(e.target.value.toUpperCase());
+                      setPromoError('');
+                    }}
+                    placeholder="Enter promo code"
+                    className="w-full px-4 py-3 bg-gradient-end rounded-xl border border-gray-700 focus:border-accent focus:outline-none transition-colors uppercase"
+                    disabled={isCreatingIntent}
+                  />
+                  {promoError && (
+                    <p className="text-red-400 text-sm mt-2">{promoError}</p>
+                  )}
+                  {promoCode && !promoError && (
+                    <p className="text-accent text-sm mt-2">
+                      ✓ Promo code will be applied at checkout
+                    </p>
+                  )}
+                </div>
                 {availablePoints >= 100 && (
                   <div className="mb-6">
                     <label className="flex items-center cursor-pointer p-4 bg-gradient-end rounded-xl">
@@ -362,6 +403,17 @@ export function Checkout() {
                     <div className="flex justify-between text-accent">
                       <span>Points Discount</span>
                       <span>-£{pointsDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {checkoutResponse?.promo_discount && checkoutResponse.promo_discount > 0 && (
+                    <div className="flex justify-between text-green-400">
+                      <span>Promo Code Discount ({checkoutResponse.promo_code_applied})</span>
+                      <span>-£{checkoutResponse.promo_discount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {promoCode && (!checkoutResponse?.promo_discount || checkoutResponse.promo_discount === 0) && (
+                    <div className="text-sm text-text-secondary italic">
+                      Promo code discount will be calculated at payment
                     </div>
                   )}
                   <div className="flex justify-between text-xl font-bold pt-2 border-t border-gray-700">

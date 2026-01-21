@@ -7,7 +7,6 @@ import {
   ShoppingCartIcon,
   CreditCardIcon,
   ClockIcon,
-  TicketIcon,
   TrophyIcon,
   UsersIcon,
 } from "lucide-react";
@@ -269,14 +268,8 @@ export function CompetitionDetails() {
             className="lg:col-span-2"
           >
             {/* Stats Cards */}
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+            <div className="grid sm:grid-cols-2 gap-4 mb-8">
               {[
-                {
-                  icon: TicketIcon,
-                  label: "Total Tickets",
-                  value: competition.max_tickets.toLocaleString(),
-                },
-
                 {
                   icon: TrophyIcon,
                   label: "Cash Alternative",

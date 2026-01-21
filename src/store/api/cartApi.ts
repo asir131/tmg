@@ -43,8 +43,11 @@ export const cartApi = api.injectEndpoints({
         cart_total: number;
         discount_amount: number;
         points_redeemed: number;
+        promo_discount: number;
+        promo_code_applied: string | null;
+        payment_job_reference: string;
       },
-      { points_to_redeem: number }
+      { points_to_redeem?: number; promo_code?: string }
     >({
       query: (body) => ({
         url: '/payments/create-intent/checkout',
@@ -62,6 +65,9 @@ export const cartApi = api.injectEndpoints({
           cart_total: number;
           discount_amount: number;
           points_redeemed: number;
+          promo_discount: number;
+          promo_code_applied: string | null;
+          payment_job_reference: string;
         }
       }) => response.data,
     }),
@@ -71,8 +77,12 @@ export const cartApi = api.injectEndpoints({
         checkout_url: string;
         amount: number;
         currency: string;
+        original_amount: number;
+        promo_discount: number;
+        promo_code_applied: string | null;
+        payment_job_reference: string;
       },
-      { competition_id: string; quantity: number; answer: string }
+      { competition_id: string; quantity: number; answer?: string; promo_code?: string }
     >({
       query: (body) => ({
         url: '/payments/create-intent/single',
@@ -87,6 +97,10 @@ export const cartApi = api.injectEndpoints({
           checkout_url: string;
           amount: number;
           currency: string;
+          original_amount: number;
+          promo_discount: number;
+          promo_code_applied: string | null;
+          payment_job_reference: string;
         }
       }) => response.data,
     }),
