@@ -52,6 +52,12 @@ export function CompetitionDetails() {
   } = useGetCompetitionFAQsQuery(id || "", {
     skip: !id,
   });
+  
+  // Only use competition FAQs - no fallback to general FAQs
+  // Competition FAQs and general FAQs should be different
+  const displayFaqs = faqItems;
+  const displayFaqsLoading = isFaqsLoading;
+  const displayFaqsError = faqsError;
   const {
     data: postalEntry,
     isLoading: isPostalLoading,
@@ -476,24 +482,40 @@ export function CompetitionDetails() {
                     }}
                     className="space-y-4"
                   >
-                    {isFaqsLoading && (
+                    {displayFaqsLoading && (
                       <p className="text-text-secondary">Loading FAQs...</p>
                     )}
-                    {faqsError && (
-                      <p className="text-red-500">Failed to load FAQs.</p>
-                    )}
-                    {faqItems?.map((faq) => (
-                      <div key={faq._id} className="card-premium p-4">
-                        <h3 className="font-semibold mb-2">{faq.question}</h3>
-                        <p className="text-text-secondary">{faq.answer}</p>
+                    {displayFaqsError && (
+                      <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                        <p className="text-red-400 mb-2">Failed to load competition FAQs.</p>
+                        <p className="text-sm text-text-secondary">
+                          {(faqsError as any)?.data?.message ||
+                            "Unable to fetch competition FAQ content."}
+                        </p>
                       </div>
-                    ))}
-                    {faqItems &&
-                      faqItems.length === 0 &&
-                      !isFaqsLoading &&
-                      !faqsError && (
+                    )}
+                    {displayFaqs && displayFaqs.length > 0 && (
+                      <>
+                        {displayFaqs.map((faq, index) => (
+                          <div 
+                            key={faq._id || `faq-${index}`} 
+                            className="card-premium p-4"
+                          >
+                            <h3 className="font-semibold mb-2">{faq.question}</h3>
+                            <div 
+                              className="text-text-secondary"
+                              dangerouslySetInnerHTML={{ __html: faq.answer }}
+                            />
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    {displayFaqs &&
+                      displayFaqs.length === 0 &&
+                      !displayFaqsLoading &&
+                      !displayFaqsError && (
                         <p className="text-text-secondary">
-                          No FAQs available.
+                          No FAQs available for this competition.
                         </p>
                       )}
                   </motion.div>

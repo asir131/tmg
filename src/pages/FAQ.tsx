@@ -43,7 +43,7 @@ export function FAQ() {
         >
           {faqs?.map((faq, index) => (
             <motion.div
-              key={faq._id}
+              key={faq._id || `faq-${index}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
@@ -70,9 +70,10 @@ export function FAQ() {
                     transition={{ duration: 0.3 }}
                     className="overflow-hidden"
                   >
-                    <div className="px-6 pb-6 text-text-secondary">
-                      {faq.answer}
-                    </div>
+                    <div 
+                      className="px-6 pb-6 text-text-secondary"
+                      dangerouslySetInnerHTML={{ __html: faq.answer }}
+                    />
                   </motion.div>
                 )}
               </AnimatePresence>

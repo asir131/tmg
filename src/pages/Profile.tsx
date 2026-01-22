@@ -55,6 +55,7 @@ export function Profile() {
   const {
     data: purchaseHistoryData,
     isLoading: isPurchaseHistoryLoading,
+    error: purchaseHistoryError,
     refetch: refetchPurchaseHistory,
   } = useGetPurchaseHistoryQuery(
     { page: purchasePage, limit: purchasePerPage },
@@ -102,7 +103,7 @@ export function Profile() {
   const totalPointsPages = pointsPagination?.totalPages ?? 1;
   const purchaseHistory = purchaseHistoryData?.data?.purchase_history ?? [];
   const purchasePagination = purchaseHistoryData?.data?.pagination;
-  const totalPurchasePages = purchasePagination?.totalPages ?? 1;
+  const totalPurchasePages = purchasePagination?.total_pages ?? 1;
   const [logoutUser, { isLoading: isLoggingOut }] = useLogoutUserMutation();
 
   useEffect(() => {
@@ -496,7 +497,25 @@ export function Profile() {
                     Loading purchase history...
                   </p>
                 )}
-                {!isPurchaseHistoryLoading && purchaseHistory.length === 0 && (
+                {purchaseHistoryError && (
+                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-4">
+                    <p className="text-red-400 mb-2">
+                      Failed to load purchase history.
+                    </p>
+                    <p className="text-sm text-text-secondary mb-3">
+                      {(purchaseHistoryError as any)?.data?.message || 
+                       (purchaseHistoryError as any)?.error ||
+                       'The backend API endpoint may not be implemented yet.'}
+                    </p>
+                    <button
+                      onClick={() => refetchPurchaseHistory()}
+                      className="text-sm text-accent hover:text-accent/80 transition-colors"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                )}
+                {!isPurchaseHistoryLoading && !purchaseHistoryError && purchaseHistory.length === 0 && (
                   <p className="text-text-secondary mb-4">
                     No purchase history found.
                   </p>

@@ -378,9 +378,19 @@ export function Checkout() {
                     </p>
                   )}
                 </div>
-                {availablePoints >= 100 && (
-                  <div className="mb-6">
-                    <label className="flex items-center cursor-pointer p-4 bg-gradient-end rounded-xl">
+                {/* Points Redemption Section */}
+                <div className="mb-6 p-4 bg-gradient-end rounded-xl border border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <TrophyIcon className="w-5 h-5 text-accent" />
+                      <span className="font-semibold">Loyalty Points</span>
+                    </div>
+                    <span className="text-accent font-bold">
+                      {availablePoints.toLocaleString()} points
+                    </span>
+                  </div>
+                  {availablePoints >= 100 ? (
+                    <label className="flex items-center cursor-pointer mt-3">
                       <input
                         type="checkbox"
                         checked={usePoints}
@@ -388,12 +398,18 @@ export function Checkout() {
                         className="w-5 h-5 rounded border-gray-700 text-accent focus:ring-accent"
                       />
                       <span className="ml-3">
-                        Use {availablePoints.toLocaleString()} points (Save £
-                        {pointsDiscount.toFixed(2)})
+                        Use {calculatedPointsToRedeem.toLocaleString()} points to save £
+                        {(calculatedPointsToRedeem / 100).toFixed(2)}
                       </span>
                     </label>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-sm text-text-secondary mt-2">
+                      {availablePoints > 0 
+                        ? `You need ${100 - availablePoints} more points to redeem (minimum 100 points required)`
+                        : 'Earn points with every purchase! 100 points = £1 discount'}
+                    </p>
+                  )}
+                </div>
                 <div className="space-y-2 p-4 bg-gradient-end rounded-xl mb-6">
                   <div className="flex justify-between">
                     <span className="text-text-secondary">Subtotal</span>

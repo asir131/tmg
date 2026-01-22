@@ -70,12 +70,12 @@ export interface PurchaseHistoryResponse {
   data: {
     purchase_history: PurchaseHistoryItem[];
     pagination?: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-      hasNext: boolean;
-      hasPrev: boolean;
+      current_page: number;
+      total_pages: number;
+      total_items: number;
+      items_per_page: number;
+      has_next: boolean;
+      has_prev: boolean;
     };
   };
 }
