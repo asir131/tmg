@@ -20,7 +20,6 @@ export function CompetitionCard({
   totalTickets,
   soldTickets
 }: CompetitionCardProps) {
-  const progressPercentage = Math.min(Math.round(soldTickets / totalTickets * 100), 100);
   return <div className="card-premium group">
       <div className="relative overflow-hidden">
         <SafeImage src={imageUrl} alt={title} className="w-full h-48 object-cover object-center transition-transform duration-700 group-hover:scale-110" />
@@ -34,19 +33,6 @@ export function CompetitionCard({
         </h3>
         <div className="mb-4">
           <CountdownTimer endDate={endDate} />
-        </div>
-        <div className="mb-4">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-text-secondary">
-              Tickets sold: {soldTickets}
-            </span>
-            <span className="text-text-secondary">Total: {totalTickets}</span>
-          </div>
-          <div className="w-full h-2 bg-gradient-end rounded-full overflow-hidden">
-            <div className="h-full bg-accent" style={{
-            width: `${progressPercentage}%`
-          }} />
-          </div>
         </div>
         <Link to={`/competition/${id}`} className="block w-full btn-premium text-center">
           Enter Now
