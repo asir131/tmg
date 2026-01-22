@@ -174,7 +174,11 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   );
                 })()}
               </div>
-              <Link to="/checkout" className="block w-full btn-premium text-center">
+              <Link 
+                to="/checkout" 
+                onClick={onClose}
+                className="block w-full btn-premium text-center"
+              >
                 Checkout
               </Link>
             </div>
