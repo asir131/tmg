@@ -9,11 +9,16 @@ interface CompetitionImageGalleryProps {
 }
 
 export function CompetitionImageGallery({ competition }: CompetitionImageGalleryProps) {
-  // Combine primary image and gallery images
-  const allImages = [
-    ...(competition.image_url ? [competition.image_url] : []),
-    ...(competition.gallery_images || []),
-  ];
+  // Use featured image as primary, and gallery images as additional
+  // According to API: image_url is featured, image_gallery is array of additional images
+  const featuredImage = competition.image_url;
+  const galleryImages = competition.image_gallery || [];
+  
+  // If there's a featured image, show it first, then gallery images
+  // If no featured image but gallery exists, use gallery images
+  const allImages = featuredImage 
+    ? [featuredImage, ...galleryImages]
+    : galleryImages;
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
