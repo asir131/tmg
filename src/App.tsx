@@ -18,6 +18,7 @@ import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { VerifyOtp } from './pages/VerifyOtp';
+import { VerifyEmail } from './pages/VerifyEmail';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { PrivateRoute } from './components/PrivateRoute';
@@ -34,6 +35,7 @@ export function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/competitions" element={<AllCompetitions />} />
           <Route path="/competition/:id" element={<CompetitionDetails />} />
           <Route path="/winners" element={<Winners />} />

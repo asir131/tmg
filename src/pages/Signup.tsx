@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { UserIcon, MailIcon, LockIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
+import { UserIcon, MailIcon, LockIcon, EyeIcon, EyeOffIcon, CheckCircleIcon } from 'lucide-react';
 import { useRegisterUserMutation } from '../store/api/authApi';
 import { PhoneNumberInput } from '../components/PhoneNumberInput';
 import { validateUKPhoneNumber, normalizePhoneNumber } from '../utils/phoneValidation';
@@ -19,7 +19,8 @@ export function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [apiErrorMessage, setApiErrorMessage] = useState<any>(null);
-  const [phoneError, setPhoneError] = useState<string>('')
+  const [phoneError, setPhoneError] = useState<string>('');
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   
   const navigate = useNavigate();
   const [registerUser, { isLoading }] = useRegisterUserMutation(); // Removed 'error' from destructuring
@@ -62,8 +63,8 @@ export function Signup() {
       if(response.data.accessToken && response.data.refreshToken) {
         localStorage.setItem('accessToken', response.data.accessToken);
         localStorage.setItem('refreshToken', response.data.refreshToken);
-        alert('Registration successful!'); // Keeping alert for success as it was explicitly there before
-        navigate('/verify-otp', { state: { email: formData.email } });
+        // Show success message instead of redirecting to verify-otp
+        setRegistrationSuccess(true);
       }
 
     } catch (err) {
@@ -79,6 +80,60 @@ export function Signup() {
       [e.target.name]: e.target.value
     });
   };
+
+  // Show registration success message
+  if (registrationSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center py-12">
+        <div className="container-premium">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-md mx-auto"
+          >
+            <div className="card-premium p-8">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 mb-4">
+                  <CheckCircleIcon className="w-8 h-8 text-green-500" />
+                </div>
+                <h1 className="text-3xl font-bold mb-2">Registration Successful!</h1>
+                <p className="text-text-secondary mb-4">
+                  We've sent a verification email to <strong className="text-white">{formData.email}</strong>
+                </p>
+                <p className="text-sm text-text-secondary mb-2">
+                  Please check your inbox and click the verification link to activate your account.
+                </p>
+                <p className="text-xs text-yellow-500/80 mb-6">
+                  ⚠️ The verification link will expire in 24 hours.
+                </p>
+              </div>
+              <div className="space-y-3">
+                <motion.button
+                  onClick={() => navigate('/login')}
+                  className="w-full btn-premium"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Go to Login
+                </motion.button>
+                <Link
+                  to="/"
+                  className="block w-full text-center py-3 px-4 rounded-xl bg-gradient-end border border-gray-700 hover:border-accent transition-colors text-text-secondary hover:text-white"
+                >
+                  Go to Home
+                </Link>
+              </div>
+              <div className="mt-6 text-center text-sm text-text-secondary">
+                <p>Didn't receive the email? Check your spam folder or contact support.</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
   return <div className="min-h-screen flex items-center justify-center py-12">
       <div className="container-premium">
         <motion.div initial={{
