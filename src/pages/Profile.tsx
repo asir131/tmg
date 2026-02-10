@@ -5,7 +5,6 @@ import {
   UserIcon,
   CreditCardIcon,
   TicketIcon,
-  SettingsIcon,
   LogOutIcon,
   EditIcon,
   TrophyIcon,
@@ -79,7 +78,6 @@ export function Profile() {
     { id: "account", label: "Account Info", icon: UserIcon },
     { id: "points", label: "Points & Rewards", icon: CreditCardIcon },
     { id: "tickets", label: "Purchase History", icon: TicketIcon },
-    { id: "settings", label: "Settings", icon: SettingsIcon },
   ];
 
   // Seed form state from profile when it loads
@@ -604,52 +602,6 @@ export function Profile() {
                     </div>
                   </>
                 )}
-              </motion.div>
-            )}
-            {/* Settings */}
-            {activeSection === "settings" && (
-              <motion.div
-                initial={{
-                  opacity: 0,
-                }}
-                animate={{
-                  opacity: 1,
-                }}
-                className="card-premium p-6"
-              >
-                <h2 className="text-2xl font-bold mb-6">Settings</h2>
-                <div className="space-y-6">
-                  <div className="relative">
-                    <h3 className="text-lg font-semibold mb-4">
-                      Notifications
-                    </h3>
-                    <div className="space-y-3">
-                      {[
-                        "Email notifications for new competitions",
-                        "SMS alerts for draw results",
-                        "Marketing emails and special offers",
-                      ].map((item, index) => (
-                        <label
-                          key={index}
-                          className="flex items-center justify-between p-4 bg-gradient-end rounded-xl cursor-pointer hover:bg-gray-800 transition-colors"
-                        >
-                          <span>{item}</span>
-                          <input
-                            type="checkbox"
-                            defaultChecked={index < 2}
-                            className="w-5 h-5 rounded border-gray-700 text-accent focus:ring-accent"
-                          />
-                        </label>
-                      ))}
-                    </div>
-                    {/* Coming Soon Overlay */}
-                    <div className="absolute inset-0 backdrop-blur-sm bg-black/30 rounded-xl flex items-center justify-center">
-                      <div className="bg-gradient-start border border-accent/50 px-8 py-4 rounded-xl shadow-lg">
-                        <h3 className="text-2xl font-bold text-white">Coming Soon</h3>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </motion.div>
             )}
           </motion.div>

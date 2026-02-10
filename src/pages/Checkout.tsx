@@ -24,6 +24,7 @@ export function Checkout() {
   const dispatch = useDispatch<AppDispatch>();
   const [step, setStep] = useState(1);
   const [usePoints, setUsePoints] = useState(false);
+  const [pointsToUse, setPointsToUse] = useState(0);
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState('');
@@ -53,23 +54,50 @@ export function Checkout() {
   const availablePoints = pointsSummary?.total_points ?? 0;
   const cartSummary = cart?.summary ?? checkoutSummary;
   const cartTotal = cartSummary?.total_price ?? 0;
-  
-  // Calculate points to redeem based on user selection
-  // Every 100 points = £1 discount
-  const calculatedPointsToRedeem = usePoints
-    ? Math.min(availablePoints, Math.floor(cartTotal * 100))
+
+  // Max points user can redeem: limited by balance and cart value (100 points = £1)
+  const maxRedeemablePoints = Math.min(
+    availablePoints,
+    Math.floor(cartTotal * 100)
+  );
+  // Effective amount to use: only when checkbox on, clamped to max, multiples of 100
+  const effectivePointsToUse = usePoints
+    ? Math.min(
+        Math.max(0, Math.floor(pointsToUse / 100) * 100),
+        maxRedeemablePoints
+      )
     : 0;
-  
-  // Use discount from checkout response if available, otherwise calculate
-  const pointsDiscount = checkoutResponse?.discount_amount ?? (calculatedPointsToRedeem / 100);
-  const finalAmount = checkoutResponse?.amount ?? Math.max(0, cartTotal - pointsDiscount);
+
+  // Use discount from checkout response if available, otherwise from points selection
+  const pointsDiscount =
+    checkoutResponse?.discount_amount ?? effectivePointsToUse / 100;
+  const finalAmount =
+    checkoutResponse?.amount ?? Math.max(0, cartTotal - pointsDiscount);
 
   useEffect(() => {
     if (!usePoints) {
+      setPointsToUse(0);
       setPointsToRedeem(0);
       setCheckoutResponse(null);
     }
   }, [usePoints]);
+
+  // When user turns on "use points", default to max
+  const handleUsePointsChange = (checked: boolean) => {
+    setUsePoints(checked);
+    if (checked) {
+      setPointsToUse(maxRedeemablePoints);
+    } else {
+      setPointsToUse(0);
+    }
+  };
+
+  // Clamp pointsToUse when max redeemable shrinks (e.g. cart or balance change)
+  useEffect(() => {
+    if (maxRedeemablePoints >= 100 && pointsToUse > maxRedeemablePoints) {
+      setPointsToUse(maxRedeemablePoints);
+    }
+  }, [maxRedeemablePoints, pointsToUse]);
 
   // Handle payment success
   useEffect(() => {
@@ -128,12 +156,10 @@ export function Checkout() {
     try {
       setCheckoutSummary(cart.summary);
       setPromoError('');
-      const points_to_redeem = usePoints
-        ? Math.min(availablePoints, Math.floor(cartTotal * 100))
-        : 0;
-      
+      const points_to_redeem = effectivePointsToUse;
+
       const intentResult = await createCheckoutIntent({
-        points_to_redeem,
+        points_to_redeem: points_to_redeem > 0 ? points_to_redeem : undefined,
         promo_code: promoCode.trim() || undefined, // Only send if not empty
       }).unwrap();
       
@@ -198,9 +224,7 @@ export function Checkout() {
             competition_id: item.competition_id,
             quantity: item.quantity,
           })),
-          pointsToRedeem: usePoints
-            ? Math.min(availablePoints, Math.floor(cartTotal * 100))
-            : 0,
+          pointsToRedeem: effectivePointsToUse,
         });
       } else if (err?.status === 400 || err?.data?.status === 400) {
         // Handle 400 Bad Request (validation errors, cart empty, etc.)
@@ -390,21 +414,64 @@ export function Checkout() {
                     </span>
                   </div>
                   {availablePoints >= 100 ? (
-                    <label className="flex items-center cursor-pointer mt-3">
-                      <input
-                        type="checkbox"
-                        checked={usePoints}
-                        onChange={(e) => setUsePoints(e.target.checked)}
-                        className="w-5 h-5 rounded border-gray-700 text-accent focus:ring-accent"
-                      />
-                      <span className="ml-3">
-                        Use {calculatedPointsToRedeem.toLocaleString()} points to save £
-                        {(calculatedPointsToRedeem / 100).toFixed(2)}
-                      </span>
-                    </label>
+                    <div className="mt-3 space-y-3">
+                      <label
+                        className={`flex items-center ${maxRedeemablePoints >= 100 ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={usePoints}
+                          disabled={maxRedeemablePoints < 100}
+                          onChange={(e) =>
+                            handleUsePointsChange(e.target.checked)
+                          }
+                          className="w-5 h-5 rounded border-gray-700 text-accent focus:ring-accent disabled:cursor-not-allowed"
+                        />
+                        <span className="ml-3">
+                          {effectivePointsToUse > 0
+                            ? `Using ${effectivePointsToUse.toLocaleString()} points to save £${(effectivePointsToUse / 100).toFixed(2)}`
+                            : `Use your points (up to ${maxRedeemablePoints.toLocaleString()} points for £${(maxRedeemablePoints / 100).toFixed(2)} off)`}
+                        </span>
+                      </label>
+                      {usePoints && maxRedeemablePoints >= 100 && (
+                        <>
+                          <p className="text-xs text-text-secondary">
+                            100 points = £1 discount
+                          </p>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="range"
+                              min={0}
+                              max={maxRedeemablePoints}
+                              step={100}
+                              value={pointsToUse}
+                              onChange={(e) =>
+                                setPointsToUse(Number(e.target.value))
+                              }
+                              className="flex-1 h-2 rounded-lg appearance-none bg-gray-700 accent-accent"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPointsToUse(maxRedeemablePoints)
+                              }
+                              className="text-sm font-medium text-accent hover:underline whitespace-nowrap"
+                            >
+                              Use max
+                            </button>
+                          </div>
+                          <div className="flex justify-between text-xs text-text-secondary">
+                            <span>0</span>
+                            <span>
+                              {maxRedeemablePoints.toLocaleString()} points
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   ) : (
                     <p className="text-sm text-text-secondary mt-2">
-                      {availablePoints > 0 
+                      {availablePoints > 0
                         ? `You need ${100 - availablePoints} more points to redeem (minimum 100 points required)`
                         : 'Earn points with every purchase! 100 points = £1 discount'}
                     </p>
@@ -415,7 +482,7 @@ export function Checkout() {
                     <span className="text-text-secondary">Subtotal</span>
                     <span>£{cartTotal.toFixed(2)}</span>
                   </div>
-                  {usePoints && (
+                  {effectivePointsToUse > 0 && (
                     <div className="flex justify-between text-accent">
                       <span>Points Discount</span>
                       <span>-£{pointsDiscount.toFixed(2)}</span>

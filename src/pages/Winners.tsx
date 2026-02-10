@@ -82,7 +82,22 @@ export function Winners() {
             <TrophyIcon className="w-10 h-10 text-accent mr-4" />
             <h1 className="text-4xl font-bold">Past Winners</h1>
           </div>
-          
+
+          {/* Featured Winner Section */}
+          <div className="mb-10 rounded-xl overflow-hidden border border-gray-700 bg-gradient-end grid grid-cols-1 md:grid-cols-4 gap-0 min-h-[280px]">
+            <div className="md:col-span-1 flex items-center justify-center bg-gray-800/50 min-h-[200px] md:min-h-0">
+              <img
+                src="/winner.png"
+                alt="TMG Virtual Cockpit Competition Winner"
+                className="w-full h-full max-h-[320px] md:max-h-none object-contain object-center"
+              />
+            </div>
+            <div className="md:col-span-3 flex items-center justify-center p-6 md:p-8">
+              <p className="text-lg md:text-xl text-white font-medium text-center md:text-left">
+                Congratulations to Kevin Irvine the winner of the TMG VIRTUAL COCKPIT COMPETITION.
+              </p>
+            </div>
+          </div>
         </motion.div>
 
         {isLoading && (
