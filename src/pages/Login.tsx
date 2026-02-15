@@ -21,12 +21,6 @@ export function Login() {
 
     try {
       const response = await loginUser({ email, password }).unwrap();
-      
-      const isVerified = response.data.user?.verified ?? true;
-      if (!isVerified) {
-        setApiErrorMessage('Please verify your account before logging in.');
-        return;
-      }
 
       if(response.data.accessToken && response.data.refreshToken) {
         localStorage.setItem('accessToken', response.data.accessToken);

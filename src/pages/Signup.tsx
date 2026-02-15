@@ -63,7 +63,6 @@ export function Signup() {
       if(response.data.accessToken && response.data.refreshToken) {
         localStorage.setItem('accessToken', response.data.accessToken);
         localStorage.setItem('refreshToken', response.data.refreshToken);
-        // Show success message instead of redirecting to verify-otp
         setRegistrationSuccess(true);
       }
 
@@ -81,7 +80,6 @@ export function Signup() {
     });
   };
 
-  // Show registration success message
   if (registrationSuccess) {
     return (
       <div className="min-h-screen flex items-center justify-center py-12">
@@ -98,34 +96,25 @@ export function Signup() {
                   <CheckCircleIcon className="w-8 h-8 text-green-500" />
                 </div>
                 <h1 className="text-3xl font-bold mb-2">Registration Successful!</h1>
-                <p className="text-text-secondary mb-4">
-                  We've sent a verification email to <strong className="text-white">{formData.email}</strong>
-                </p>
-                <p className="text-sm text-text-secondary mb-2">
-                  Please check your inbox and click the verification link to activate your account.
-                </p>
-                <p className="text-xs text-yellow-500/80 mb-6">
-                  ⚠️ The verification link will expire in 24 hours.
+                <p className="text-text-secondary mb-6">
+                  Your account has been created. You're logged in and can use the app.
                 </p>
               </div>
               <div className="space-y-3">
                 <motion.button
-                  onClick={() => navigate('/login')}
+                  onClick={() => navigate('/')}
                   className="w-full btn-premium"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  Go to Login
+                  Continue to Home
                 </motion.button>
                 <Link
-                  to="/"
+                  to="/login"
                   className="block w-full text-center py-3 px-4 rounded-xl bg-gradient-end border border-gray-700 hover:border-accent transition-colors text-text-secondary hover:text-white"
                 >
-                  Go to Home
+                  Go to Login
                 </Link>
-              </div>
-              <div className="mt-6 text-center text-sm text-text-secondary">
-                <p>Didn't receive the email? Check your spam folder or contact support.</p>
               </div>
             </div>
           </motion.div>
