@@ -150,18 +150,18 @@ export function Home() {
             </Link>
           </div>
 
-          {/* Featured Winner - Kevin Irvine / TMG Virtual Cockpit */}
+          {/* Featured Winner - Nigel Atkins / TMG hybrid bumper */}
           <div className="mb-10 rounded-xl overflow-hidden border border-gray-700 bg-gradient-end grid grid-cols-1 md:grid-cols-4 gap-0 min-h-[280px]">
             <div className="md:col-span-1 flex items-center justify-center bg-gray-800/50 min-h-[200px] md:min-h-0">
               <img
                 src="/winner.png"
-                alt="TMG Virtual Cockpit Competition Winner"
+                alt="TMG hybrid bumper Competition Winner"
                 className="w-full h-full max-h-[320px] md:max-h-none object-contain object-center"
               />
             </div>
             <div className="md:col-span-3 flex items-center justify-center p-6 md:p-8">
               <p className="text-lg md:text-xl text-white font-medium text-center md:text-left">
-                Congratulations to Kevin Irvine the winner of the TMG VIRTUAL COCKPIT COMPETITION.
+                Congratulations Nigel Atkins on winning the TMG hybrid bumper
               </p>
             </div>
           </div>
@@ -169,10 +169,7 @@ export function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {winnersLoading && <p className="text-text-secondary">Loading winners...</p>}
             {winnersError && <p className="text-red-500">Failed to load winners.</p>}
-            {!winnersLoading && !winnersError && recentWinners.length === 0 && (
-              <p className="text-text-secondary">No winners found.</p>
-            )}
-            {recentWinners.map((winner, index) => <motion.div key={winner.id} initial={{
+            {!winnersLoading && !winnersError && recentWinners.map((winner, index) => <motion.div key={winner.id} initial={{
             opacity: 0,
             y: 20
           }} animate={{

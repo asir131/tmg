@@ -86,15 +86,15 @@ export function Winners() {
           {/* Featured Winner Section */}
           <div className="mb-10 rounded-xl overflow-hidden border border-gray-700 bg-gradient-end grid grid-cols-1 md:grid-cols-4 gap-0 min-h-[280px]">
             <div className="md:col-span-1 flex items-center justify-center bg-gray-800/50 min-h-[200px] md:min-h-0">
-              <img
-                src="/winner.png"
-                alt="TMG Virtual Cockpit Competition Winner"
-                className="w-full h-full max-h-[320px] md:max-h-none object-contain object-center"
-              />
+                <img
+                  src="/winner.png"
+                  alt="TMG hybrid bumper Competition Winner"
+                  className="w-full h-full max-h-[320px] md:max-h-none object-contain object-center"
+                />
             </div>
             <div className="md:col-span-3 flex items-center justify-center p-6 md:p-8">
               <p className="text-lg md:text-xl text-white font-medium text-center md:text-left">
-                Congratulations to Kevin Irvine the winner of the TMG VIRTUAL COCKPIT COMPETITION.
+                Congratulations Nigel Atkins on winning the TMG hybrid bumper
               </p>
             </div>
           </div>
