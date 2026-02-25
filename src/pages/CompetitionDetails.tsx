@@ -38,6 +38,7 @@ export function CompetitionDetails() {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [isCompetitionClosed, setIsCompetitionClosed] = useState(false);
 
   const {
     data,
@@ -90,6 +91,35 @@ export function CompetitionDetails() {
     }
   }, [competition?._id]);
 
+  // Update isCompetitionClosed when countdown reaches zero
+  useEffect(() => {
+    if (!competition?.draw_countdown) return;
+    const endTime = new Date(competition.draw_countdown).getTime();
+    if (endTime <= Date.now()) {
+      setIsCompetitionClosed(true);
+      return;
+    }
+    const interval = setInterval(() => {
+      if (Date.now() >= endTime) {
+        setIsCompetitionClosed(true);
+        clearInterval(interval);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [competition?.draw_countdown]);
+
+  // Meta Pixel: ViewContent when competition detail is viewed
+  useEffect(() => {
+    if (!competition?._id || typeof window.fbq === 'undefined') return;
+    window.fbq('track', 'ViewContent', {
+      content_type: 'product',
+      content_ids: [competition._id],
+      content_name: competition.title,
+      value: competition.ticket_price,
+      currency: 'GBP',
+    });
+  }, [competition?._id, competition?.title, competition?.ticket_price]);
+
   // Helper function to check if error is a wrong answer error
   const isWrongAnswerError = (error: any): boolean => {
     return (
@@ -118,6 +148,10 @@ export function CompetitionDetails() {
     );
   }
 
+  const isClosed =
+    isCompetitionClosed ||
+    new Date(competition.draw_countdown).getTime() <= Date.now();
+
   const subtotal = quantity * competition.ticket_price;
   const total = subtotal;
   const progressPercentage = Math.min(
@@ -126,6 +160,7 @@ export function CompetitionDetails() {
   );
 
   const handleBuyNow = () => {
+    if (isClosed) return;
     if (!isAuthenticated) {
       navigate("/login");
       return;
@@ -144,6 +179,7 @@ export function CompetitionDetails() {
   };
 
   const handleAddToCart = async () => {
+    if (isClosed) return;
     setApiError(null);
     if (!isAuthenticated) {
       navigate("/login");
@@ -165,6 +201,16 @@ export function CompetitionDetails() {
         quantity,
         answer: selectedAnswer,
       }).unwrap();
+      if (typeof window.fbq !== 'undefined') {
+        window.fbq('track', 'AddToCart', {
+          content_type: 'product',
+          content_ids: [competition._id],
+          content_name: competition.title,
+          num_items: quantity,
+          value: competition.ticket_price * quantity,
+          currency: 'GBP',
+        });
+      }
       toast.success("Added to cart.");
     } catch (err: any) {
       console.error("Failed to add to cart:", err);
@@ -736,7 +782,12 @@ export function CompetitionDetails() {
                     competition due to an incorrect answer.
                   </div>
                 )}
-                {!selectedAnswer && !isBlocked && (
+                {isClosed && (
+                  <div className="mb-4 p-3 bg-gray-600/50 rounded-lg text-text-secondary text-sm text-center">
+                    The Competition is closed.
+                  </div>
+                )}
+                {!selectedAnswer && !isBlocked && !isClosed && (
                   <div className="mb-4 p-3 bg-yellow-500/20 rounded-lg text-yellow-400 text-sm">
                     ⚠️ Please answer the question above to purchase tickets
                   </div>
@@ -744,17 +795,17 @@ export function CompetitionDetails() {
                 <div className="space-y-3">
                   <motion.button
                     onClick={handleBuyNow}
-                    disabled={!selectedAnswer || isBlocked}
+                    disabled={!selectedAnswer || isBlocked || isClosed}
                     className="w-full btn-premium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                     whileHover={
-                      selectedAnswer
+                      selectedAnswer && !isClosed
                         ? {
                             scale: 1.02,
                           }
                         : {}
                     }
                     whileTap={
-                      selectedAnswer
+                      selectedAnswer && !isClosed
                         ? {
                             scale: 0.98,
                           }
@@ -767,13 +818,13 @@ export function CompetitionDetails() {
 
                   <motion.button
                     onClick={handleAddToCart}
-                    disabled={!selectedAnswer || isAddingToCart || isBlocked}
+                    disabled={!selectedAnswer || isAddingToCart || isBlocked || isClosed}
                     className="w-full py-3 rounded-xl bg-gradient-end hover:bg-gray-700 transition-colors border border-gray-700 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                     whileHover={
-                      selectedAnswer && !isAddingToCart ? { scale: 1.02 } : {}
+                      selectedAnswer && !isAddingToCart && !isClosed ? { scale: 1.02 } : {}
                     }
                     whileTap={
-                      selectedAnswer && !isAddingToCart ? { scale: 0.98 } : {}
+                      selectedAnswer && !isAddingToCart && !isClosed ? { scale: 0.98 } : {}
                     }
                   >
                     {isAddingToCart ? (

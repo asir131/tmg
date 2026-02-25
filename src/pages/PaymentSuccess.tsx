@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { TrophyIcon, CheckCircleIcon, LoaderIcon } from "lucide-react";
@@ -36,6 +36,26 @@ export function PaymentSuccess() {
   const [pollCount, setPollCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [errorType, setErrorType] = useState<"auth" | "notfound" | "other" | null>(null);
+  const purchasePixelFired = useRef(false);
+
+  // Meta Pixel: Purchase (once) when payment succeeded – eventID for deduplication with backend
+  useEffect(() => {
+    if (paymentStatus?.status !== "succeeded" || !paymentIntentId || purchasePixelFired.current) return;
+    if (typeof window.fbq === "undefined") return;
+    purchasePixelFired.current = true;
+    window.fbq(
+      "track",
+      "Purchase",
+      {
+        value: paymentStatus.amount,
+        currency: "GBP",
+        order_id: paymentIntentId,
+        content_ids: [],
+        content_type: "product",
+      },
+      { eventID: paymentIntentId }
+    );
+  }, [paymentIntentId, paymentStatus?.status, paymentStatus?.amount]);
 
   // SSE connection using fetch with ReadableStream (supports Authorization header)
   const connectSSE = (paymentIntentId: string, token: string): Promise<{ close: () => void }> => {

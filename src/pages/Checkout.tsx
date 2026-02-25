@@ -158,6 +158,18 @@ export function Checkout() {
       setPromoError('');
       const points_to_redeem = effectivePointsToUse;
 
+      if (typeof window.fbq !== 'undefined') {
+        const contentIds = cart.cart_items.map((item) => item.competition_id);
+        const totalQuantity = cart.cart_items.reduce((sum, item) => sum + item.quantity, 0);
+        window.fbq('track', 'InitiateCheckout', {
+          content_type: 'product',
+          content_ids: contentIds,
+          num_items: totalQuantity,
+          value: cartTotal,
+          currency: 'GBP',
+        });
+      }
+
       const intentResult = await createCheckoutIntent({
         points_to_redeem: points_to_redeem > 0 ? points_to_redeem : undefined,
         promo_code: promoCode.trim() || undefined, // Only send if not empty
