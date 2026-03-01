@@ -35,6 +35,12 @@ const baseQueryWithReauth: BaseQueryFn<
 
   // If we get a 401 and we're not already refreshing and this isn't the refresh endpoint
   if (result.error && result.error.status === 401 && !isRefreshing && !isRefreshEndpoint) {
+    // Login/register can return 401 for wrong credentials; do not redirect, let the page show the error
+    const isAuthCredentialsEndpoint = url === 'auth/login' || url === 'auth/register';
+    if (isAuthCredentialsEndpoint) {
+      return result;
+    }
+
     const refreshToken = localStorage.getItem('refreshToken');
 
     if (!refreshToken) {
