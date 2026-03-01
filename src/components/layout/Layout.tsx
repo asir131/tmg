@@ -16,7 +16,10 @@ export function Layout({
     if (typeof window.fbq !== 'undefined') {
       window.fbq!('track', 'PageView');
     }
-  }, [location.pathname]);
+    if (typeof window.gtag !== 'undefined') {
+      window.gtag('config', 'G-LK2JK2K63F', { page_path: location.pathname + location.search });
+    }
+  }, [location.pathname, location.search]);
 
   return <div className="flex flex-col min-h-screen bg-base">
       <Header />
