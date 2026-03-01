@@ -237,7 +237,7 @@ export function Header() {
                 <Link
                   to="/login"
                   onClick={() => setIsMenuOpen(false)}
-                  className="block py-2 text-base font-medium text-accent"
+                  className="block py-2 text-base font-medium text-white hover:text-accent transition-colors"
                 >
                   Login / Signup
                 </Link>
