@@ -150,18 +150,18 @@ export function Home() {
             </Link>
           </div>
 
-          {/* Featured Winner - Nigel Atkins / TMG hybrid bumper */}
+          {/* Featured Winner - Jack Ogg / Club Sport Caddy */}
           <div className="mb-10 rounded-xl overflow-hidden border border-gray-700 bg-gradient-end grid grid-cols-1 md:grid-cols-4 gap-0 min-h-[280px]">
             <div className="md:col-span-1 flex items-center justify-center bg-gray-800/50 min-h-[200px] md:min-h-0">
-              <img
-                src="/winner.png"
-                alt="TMG hybrid bumper Competition Winner"
+              <SafeImage
+                src="/fixed-cadddy-pic.jpeg"
+                alt="Club Sport Caddy Competition Winner"
                 className="w-full h-full max-h-[320px] md:max-h-none object-contain object-center"
               />
             </div>
             <div className="md:col-span-3 flex items-center justify-center p-6 md:p-8">
               <p className="text-lg md:text-xl text-white font-medium text-center md:text-left">
-                Congratulations Nigel Atkins on winning the TMG hybrid bumper
+                Winner of Club Sport Caddy competition is Jack Ogg
               </p>
             </div>
           </div>
