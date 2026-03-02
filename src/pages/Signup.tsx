@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { UserIcon, MailIcon, LockIcon, EyeIcon, EyeOffIcon, CheckCircleIcon } from 'lucide-react';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useRegisterUserMutation } from '../store/api/authApi';
 import { PhoneNumberInput } from '../components/PhoneNumberInput';
 import { validateUKPhoneNumber, normalizePhoneNumber } from '../utils/phoneValidation';
@@ -246,10 +248,11 @@ export function Signup() {
                   </span>
                 </div>
               </div>
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                <button 
-                  disabled
-                  className="py-3 px-4 rounded-xl bg-gradient-end border border-gray-700 flex items-center justify-center opacity-50 cursor-not-allowed"
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={() => toast.info('This feature is coming soon')}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-end border border-gray-700 flex items-center justify-center hover:border-accent transition-colors"
                 >
                   <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                     <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -259,19 +262,11 @@ export function Signup() {
                   </svg>
                   Google
                 </button>
-                <button 
-                  disabled
-                  className="py-3 px-4 rounded-xl bg-gradient-end border border-gray-700 flex items-center justify-center opacity-50 cursor-not-allowed"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.96-3.24-.96-1.15 0-1.92.46-2.9.96-1.25.57-2.16.5-3.08-.4C2.79 18.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                  </svg>
-                  Apple
-                </button>
               </div>
             </div>
           </div>
         </motion.div>
       </div>
+      <ToastContainer position="top-right" />
     </div>;
 }
