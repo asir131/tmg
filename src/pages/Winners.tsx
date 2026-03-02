@@ -11,6 +11,7 @@ interface WinnerCard {
   prizeImage: string;
   ticketNumber: string;
   winDate: string;
+  prizeValue: number;
   videoUrl?: string | null;
 }
 
@@ -37,6 +38,7 @@ export function Winners() {
       prizeImage: item.competition_id?.image_url ?? "",
       ticketNumber: item.ticket_number,
       winDate: new Date(item.draw_date).toLocaleDateString("en-GB"),
+      prizeValue: item.prize_value ?? 0,
       videoUrl: item.draw_video_url ?? null,
     }));
   }, [data]);
@@ -70,6 +72,8 @@ export function Winners() {
     },
   };
 
+  const pastWinnersPlaceholderCount = 6;
+
   return (
     <div className="py-8">
       <div className="container-premium">
@@ -80,103 +84,147 @@ export function Winners() {
         >
           <div className="flex items-center mb-8">
             <TrophyIcon className="w-10 h-10 text-accent mr-4" />
-            <h1 className="text-4xl font-bold">Past Winners</h1>
+            <h1 className="text-4xl font-bold">Winners</h1>
           </div>
 
-          {/* Featured Winner Section */}
-          <div className="mb-10 rounded-xl overflow-hidden border border-gray-700 bg-gradient-end grid grid-cols-1 md:grid-cols-4 gap-0 min-h-[280px]">
-            <div className="md:col-span-1 flex items-center justify-center bg-gray-800/50 min-h-[200px] md:min-h-0">
-                <img
-                  src="/winner.png"
-                  alt="TMG hybrid bumper Competition Winner"
+          {/* Section: Recent Winner */}
+          <section className="mb-16">
+            <h2 className="text-2xl font-bold mb-6">Recent Winner</h2>
+            {/* Featured Winner - Jack Ogg / Club Sport Caddy (matches Home) */}
+            <div className="mb-10 rounded-xl overflow-hidden border border-gray-700 bg-gradient-end grid grid-cols-1 md:grid-cols-4 gap-0 min-h-[280px]">
+              <div className="md:col-span-1 flex items-center justify-center bg-gray-800/50 min-h-[200px] md:min-h-0">
+                <SafeImage
+                  src="/fixed-cadddy-pic.jpeg"
+                  alt="Club Sport Caddy Competition Winner"
                   className="w-full h-full max-h-[320px] md:max-h-none object-contain object-center"
                 />
+              </div>
+              <div className="md:col-span-3 flex flex-col items-center justify-center p-6 md:p-8 md:items-start">
+                <p className="text-lg md:text-xl text-white font-medium text-center md:text-left">
+                  Winner of Club Sport Caddy competition is Jack Ogg
+                </p>
+                <p className="text-text-secondary mt-2 text-center md:text-left">
+                  Ticket number: <span className="text-accent font-semibold">3354</span>
+                </p>
+              </div>
             </div>
-            <div className="md:col-span-3 flex items-center justify-center p-6 md:p-8">
-              <p className="text-lg md:text-xl text-white font-medium text-center md:text-left">
-                Congratulations Nigel Atkins on winning the TMG hybrid bumper
-              </p>
-            </div>
-          </div>
-        </motion.div>
 
-        {isLoading && (
-          <p className="text-text-secondary mb-4">Loading winners...</p>
-        )}
-        {error && (
-          <div className="text-red-500 mb-4 space-y-2">
-            <p>Failed to load winners.</p>
-            <button
-              onClick={() => refetch()}
-              className="px-4 py-2 rounded-lg bg-gradient-end hover:bg-gray-700 transition-colors text-white"
+            {isLoading && (
+              <p className="text-text-secondary mb-4">Loading winners...</p>
+            )}
+            {error && (
+              <div className="text-red-500 mb-4 space-y-2">
+                <p>Failed to load winners.</p>
+                <button
+                  onClick={() => refetch()}
+                  className="px-4 py-2 rounded-lg bg-gradient-end hover:bg-gray-700 transition-colors text-white"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
-              Retry
-            </button>
-          </div>
-        )}
-
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {filteredWinners.map((winner) => (
+              {filteredWinners.map((winner) => (
             <motion.div
               key={winner.id}
               variants={itemVariants}
               whileHover={{ y: -5 }}
               onClick={() => setSelectedWinner(winner)}
-              className="card-premium cursor-pointer group"
+              className="card-premium overflow-hidden cursor-pointer group"
             >
-              <div className="relative overflow-hidden">
+              <div className="relative h-48 overflow-hidden">
                 <SafeImage
                   src={winner.prizeImage}
                   alt={winner.competitionTitle}
-                  className="w-full h-48 object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <PlayIcon className="w-12 h-12 text-white" />
-                </div>
-                <div className="absolute top-3 right-3 bg-accent rounded-full px-3 py-1 text-sm font-bold">
-                  {winner.ticketNumber}
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4">
+                  <div className="text-sm text-accent mb-1">{winner.winDate}</div>
+                  <div className="text-lg font-bold mb-1">{winner.name}</div>
                 </div>
               </div>
               <div className="p-5">
-                <h3 className="text-lg font-bold mb-2">
-                  {winner.competitionTitle}
-                </h3>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-text-secondary">{winner.name}</span>
-                  <span className="text-text-secondary">{winner.winDate}</span>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-text-secondary mb-1">Prize Won</div>
+                    <div className="font-semibold">{winner.competitionTitle}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-text-secondary mb-1">Value</div>
+                    <div className="text-xl font-bold text-accent">
+                      £{winner.prizeValue.toLocaleString("en-GB")}
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
-          ))}
-        </motion.div>
+              ))}
+            </motion.div>
 
-        {/* Pagination */}
-        {filteredWinners.length > 0 && totalPages > 1 && (
-          <div className="flex justify-center mt-8 gap-2">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              className="px-4 py-2 rounded-lg bg-gradient-end hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Prev
-            </button>
-            <span className="text-sm text-text-secondary px-2">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              className="px-4 py-2 rounded-lg bg-gradient-end hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Next
-            </button>
-          </div>
-        )}
+            {/* Pagination for Recent Winner */}
+            {filteredWinners.length > 0 && totalPages > 1 && (
+              <div className="flex justify-center mt-8 gap-2">
+                <button
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page === 1}
+                  className="px-4 py-2 rounded-lg bg-gradient-end hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Prev
+                </button>
+                <span className="text-sm text-text-secondary px-2">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  disabled={page === totalPages}
+                  className="px-4 py-2 rounded-lg bg-gradient-end hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </section>
+
+          {/* Section: Past Winners (blurred placeholders for now) */}
+          <section>
+            <h2 className="text-2xl font-bold mb-6">Past Winners</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: pastWinnersPlaceholderCount }).map((_, i) => (
+                <div
+                  key={`past-${i}`}
+                  className="card-premium overflow-hidden select-none pointer-events-none blur-md"
+                >
+                  <div className="relative h-48 overflow-hidden bg-gradient-end">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="text-sm text-accent mb-1">DD/MM/YYYY</div>
+                      <div className="text-lg font-bold mb-1">Winner Name</div>
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-text-secondary mb-1">Prize Won</div>
+                        <div className="font-semibold">Competition Title</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-text-secondary mb-1">Value</div>
+                        <div className="text-xl font-bold text-accent">£0</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </motion.div>
 
         {/* Winner Details Modal */}
         <AnimatePresence>

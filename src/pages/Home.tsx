@@ -159,9 +159,12 @@ export function Home() {
                 className="w-full h-full max-h-[320px] md:max-h-none object-contain object-center"
               />
             </div>
-            <div className="md:col-span-3 flex items-center justify-center p-6 md:p-8">
+            <div className="md:col-span-3 flex flex-col items-center justify-center p-6 md:p-8 md:items-start">
               <p className="text-lg md:text-xl text-white font-medium text-center md:text-left">
                 Winner of Club Sport Caddy competition is Jack Ogg
+              </p>
+              <p className="text-text-secondary mt-2 text-center md:text-left">
+                Ticket number: <span className="text-accent font-semibold">3354</span>
               </p>
             </div>
           </div>
