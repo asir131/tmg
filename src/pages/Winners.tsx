@@ -6,12 +6,12 @@ import { useGetResultsQuery } from "../store/api/competitionsApi";
 
 interface WinnerCard {
   id: string;
-  name: string;
-  competitionTitle: string;
-  prizeImage: string;
+  competitionName: string;
+  imageUrl: string;
+  message: string;
   ticketNumber: string;
-  winDate: string;
-  prizeValue: number;
+  announcedDate: string;
+  prizeValue?: number;
   videoUrl?: string | null;
 }
 
@@ -21,7 +21,7 @@ export function Winners() {
   const [selectedWinner, setSelectedWinner] = useState<WinnerCard | null>(null);
 
   const { data, isLoading, error, refetch } = useGetResultsQuery(
-    { page, limit: 10 },
+    { recent_limit: 10, past_page: page, past_limit: 9 },
     {
       refetchOnFocus: true,
       refetchOnReconnect: true,
@@ -29,30 +29,44 @@ export function Winners() {
     }
   );
 
-  const winners: WinnerCard[] = useMemo(() => {
-    if (!data?.data?.results) return [];
-    return data.data.results.map((item) => ({
+  const recentWinnerCards: WinnerCard[] = useMemo(() => {
+    const recent = data?.data?.recentWinners ?? [];
+    return recent.map((item) => ({
       id: item._id,
-      name: item.user_id?.name ?? "Unknown",
-      competitionTitle: item.competition_id?.title ?? "Unknown",
-      prizeImage: item.competition_id?.image_url ?? "",
+      competitionName: item.competition_name,
+      imageUrl: item.image_url,
+      message: item.message,
       ticketNumber: item.ticket_number,
-      winDate: new Date(item.draw_date).toLocaleDateString("en-GB"),
-      prizeValue: item.prize_value ?? 0,
-      videoUrl: item.draw_video_url ?? null,
+      announcedDate: new Date(item.announced_at).toLocaleDateString("en-GB"),
+      prizeValue: item.prize_value,
+      videoUrl: undefined,
     }));
   }, [data]);
 
-  const filteredWinners = winners.filter(
+  const pastWinnerCards: WinnerCard[] = useMemo(() => {
+    const past = data?.data?.pastWinners?.results ?? [];
+    return past.map((item) => ({
+      id: item._id,
+      competitionName: item.competition_name,
+      imageUrl: item.image_url,
+      message: item.message,
+      ticketNumber: item.ticket_number,
+      announcedDate: new Date(item.announced_at).toLocaleDateString("en-GB"),
+      prizeValue: item.prize_value,
+      videoUrl: undefined,
+    }));
+  }, [data]);
+
+  const filteredPastWinners = pastWinnerCards.filter(
     (winner) =>
-      winner.competitionTitle
+      winner.competitionName
         .toLowerCase()
         .includes(searchQuery.toLowerCase()) ||
-      winner.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      winner.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
       winner.ticketNumber.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const pagination = data?.data?.pagination;
+  const pagination = data?.data?.pastWinners?.pagination;
   const totalPages = pagination?.totalPages ?? 1;
 
   const containerVariants = {
@@ -72,8 +86,6 @@ export function Winners() {
     },
   };
 
-  const pastWinnersPlaceholderCount = 6;
-
   return (
     <div className="py-8">
       <div className="container-premium">
@@ -87,27 +99,35 @@ export function Winners() {
             <h1 className="text-4xl font-bold">Winners</h1>
           </div>
 
-          {/* Section: Recent Winner */}
+          {/* Section: Recent Winners */}
           <section className="mb-16">
-            <h2 className="text-2xl font-bold mb-6">Recent Winner</h2>
-            {/* Featured Winner - Jack Ogg / Club Sport Caddy (matches Home) */}
-            <div className="mb-10 rounded-xl overflow-hidden border border-gray-700 bg-gradient-end grid grid-cols-1 md:grid-cols-4 gap-0 min-h-[280px]">
-              <div className="md:col-span-1 flex items-center justify-center bg-gray-800/50 min-h-[200px] md:min-h-0">
-                <SafeImage
-                  src="/fixed-cadddy-pic.jpeg"
-                  alt="Club Sport Caddy Competition Winner"
-                  className="w-full h-full max-h-[320px] md:max-h-none object-contain object-center"
-                />
+            <h2 className="text-2xl font-bold mb-6">Recent Winners</h2>
+            {/* Featured recent winner from API, if present */}
+            {recentWinnerCards[0] && (
+              <div className="mb-10 rounded-xl overflow-hidden border border-gray-700 bg-gradient-end grid grid-cols-1 md:grid-cols-4 gap-0 min-h-[280px]">
+                <div className="md:col-span-1 flex items-center justify-center bg-gray-800/50 min-h-[200px] md:min-h-0">
+                  <SafeImage
+                    src={recentWinnerCards[0].imageUrl}
+                    alt={recentWinnerCards[0].message}
+                    className="w-full h-full max-h-[320px] md:max-h-none object-contain object-center"
+                  />
+                </div>
+                <div className="md:col-span-3 flex flex-col items-center justify-center p-6 md:p-8 md:items-start">
+                  <p className="text-lg md:text-xl text-white font-medium text-center md:text-left">
+                    {recentWinnerCards[0].message}
+                  </p>
+                  <p className="text-text-secondary mt-2 text-center md:text-left">
+                    Ticket number:{" "}
+                    <span className="text-accent font-semibold">
+                      {recentWinnerCards[0].ticketNumber}
+                    </span>
+                  </p>
+                  <p className="text-text-secondary mt-1 text-center md:text-left">
+                    Announced on {recentWinnerCards[0].announcedDate}
+                  </p>
+                </div>
               </div>
-              <div className="md:col-span-3 flex flex-col items-center justify-center p-6 md:p-8 md:items-start">
-                <p className="text-lg md:text-xl text-white font-medium text-center md:text-left">
-                  Winner of Club Sport Caddy competition is Jack Ogg
-                </p>
-                <p className="text-text-secondary mt-2 text-center md:text-left">
-                  Ticket number: <span className="text-accent font-semibold">3354</span>
-                </p>
-              </div>
-            </div>
+            )}
 
             {isLoading && (
               <p className="text-text-secondary mb-4">Loading winners...</p>
@@ -124,52 +144,121 @@ export function Winners() {
               </div>
             )}
 
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {filteredWinners.map((winner) => (
-            <motion.div
-              key={winner.id}
-              variants={itemVariants}
-              whileHover={{ y: -5 }}
-              onClick={() => setSelectedWinner(winner)}
-              className="card-premium overflow-hidden cursor-pointer group"
-            >
-              <div className="relative h-48 overflow-hidden">
-                <SafeImage
-                  src={winner.prizeImage}
-                  alt={winner.competitionTitle}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="text-sm text-accent mb-1">{winner.winDate}</div>
-                  <div className="text-lg font-bold mb-1">{winner.name}</div>
-                </div>
-              </div>
-              <div className="p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm text-text-secondary mb-1">Prize Won</div>
-                    <div className="font-semibold">{winner.competitionTitle}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-text-secondary mb-1">Value</div>
-                    <div className="text-xl font-bold text-accent">
-                      £{winner.prizeValue.toLocaleString("en-GB")}
+            {recentWinnerCards.length > 1 && (
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              >
+                {recentWinnerCards.slice(1).map((winner) => (
+                  <motion.div
+                    key={winner.id}
+                    variants={itemVariants}
+                    whileHover={{ y: -5 }}
+                    onClick={() => setSelectedWinner(winner)}
+                    className="card-premium overflow-hidden cursor-pointer group"
+                  >
+                    <div className="relative h-48 overflow-hidden">
+                      <SafeImage
+                        src={winner.imageUrl}
+                        alt={winner.message}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <div className="text-sm text-accent mb-1">
+                          {winner.announcedDate}
+                        </div>
+                        <div className="text-lg font-bold mb-1">
+                          {winner.message}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm text-text-secondary mb-1">
+                            Ticket Number
+                          </div>
+                          <div className="font-semibold">
+                            {winner.ticketNumber}
+                          </div>
+                        </div>
+                        {winner.prizeValue != null && (
+                          <div className="text-right">
+                            <div className="text-sm text-text-secondary mb-1">
+                              Value
+                            </div>
+                            <div className="text-xl font-bold text-accent">
+                              £{winner.prizeValue.toLocaleString("en-GB")}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </section>
+
+          {/* Section: Past Winners */}
+          <section>
+            <h2 className="text-2xl font-bold mb-6">Past Winners</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPastWinners.map((winner) => (
+                <motion.div
+                  key={winner.id}
+                  variants={itemVariants}
+                  whileHover={{ y: -5 }}
+                  onClick={() => setSelectedWinner(winner)}
+                  className="card-premium overflow-hidden cursor-pointer group"
+                >
+                  <div className="relative h-48 overflow-hidden">
+                    <SafeImage
+                      src={winner.imageUrl}
+                      alt={winner.message}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <div className="text-sm text-accent mb-1">
+                        {winner.announcedDate}
+                      </div>
+                      <div className="text-lg font-bold mb-1">
+                        {winner.message}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            </motion.div>
+                  <div className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-text-secondary mb-1">
+                          Ticket Number
+                        </div>
+                        <div className="font-semibold">
+                          {winner.ticketNumber}
+                        </div>
+                      </div>
+                      {winner.prizeValue != null && (
+                        <div className="text-right">
+                          <div className="text-sm text-text-secondary mb-1">
+                            Value
+                          </div>
+                          <div className="text-xl font-bold text-accent">
+                            £{winner.prizeValue.toLocaleString("en-GB")}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
               ))}
-            </motion.div>
+            </div>
 
-            {/* Pagination for Recent Winner */}
-            {filteredWinners.length > 0 && totalPages > 1 && (
+            {/* Pagination for Past Winners */}
+            {filteredPastWinners.length > 0 && totalPages > 1 && (
               <div className="flex justify-center mt-8 gap-2">
                 <button
                   onClick={() => setPage(Math.max(1, page - 1))}
@@ -190,39 +279,6 @@ export function Winners() {
                 </button>
               </div>
             )}
-          </section>
-
-          {/* Section: Past Winners (blurred placeholders for now) */}
-          <section>
-            <h2 className="text-2xl font-bold mb-6">Past Winners</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: pastWinnersPlaceholderCount }).map((_, i) => (
-                <div
-                  key={`past-${i}`}
-                  className="card-premium overflow-hidden select-none pointer-events-none blur-md"
-                >
-                  <div className="relative h-48 overflow-hidden bg-gradient-end">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="text-sm text-accent mb-1">DD/MM/YYYY</div>
-                      <div className="text-lg font-bold mb-1">Winner Name</div>
-                    </div>
-                  </div>
-                  <div className="p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-sm text-text-secondary mb-1">Prize Won</div>
-                        <div className="font-semibold">Competition Title</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-text-secondary mb-1">Value</div>
-                        <div className="text-xl font-bold text-accent">£0</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </section>
         </motion.div>
 

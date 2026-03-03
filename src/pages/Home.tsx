@@ -9,17 +9,25 @@ import { SafeImage } from '../components/SafeImage';
 export function Home() {
   const navigate = useNavigate();
   const { data: competitionsData, error, isLoading } = useGetCompetitionsQuery({ page: 1, limit: 3 });
-  const { data: winnersData, isLoading: winnersLoading, error: winnersError } = useGetResultsQuery({ page: 1, limit: 3 });
+  // Use combined winners endpoint: recent + past. Home only needs recent.
+  const { data: winnersData, isLoading: winnersLoading, error: winnersError } = useGetResultsQuery({
+    recent_limit: 4,
+    past_page: 1,
+    past_limit: 1,
+  });
   const isAuthenticated = !!localStorage.getItem('accessToken');
 
-  const recentWinners = (winnersData?.data?.results ?? []).map((winner) => ({
+  const apiRecentWinners = winnersData?.data?.recentWinners ?? [];
+  const recentWinners = apiRecentWinners.map((winner) => ({
     id: winner._id,
-    name: winner.user_id?.name || 'Winner',
-    prize: winner.competition_id?.title || 'Competition',
-    imageUrl: winner.competition_id?.image_url || '/Simplification.svg',
-    winDate: new Date(winner.draw_date).toLocaleDateString('en-GB'),
-    value: `£${(winner.prize_value ?? 0).toLocaleString('en-GB')}`,
+    message: winner.message,
+    imageUrl: winner.image_url || '/Simplification.svg',
+    winDate: new Date(winner.announced_at).toLocaleDateString('en-GB'),
+    ticketNumber: winner.ticket_number,
+    value: winner.prize_value != null ? `£${winner.prize_value.toLocaleString('en-GB')}` : null,
   }));
+
+  const [featuredRecentWinner, ...otherRecentWinners] = recentWinners;
 
   return <div>
       {/* Hero Section */}
@@ -150,66 +158,84 @@ export function Home() {
             </Link>
           </div>
 
-          {/* Featured Winner - Jack Ogg / Club Sport Caddy */}
-          <div className="mb-10 rounded-xl overflow-hidden border border-gray-700 bg-gradient-end grid grid-cols-1 md:grid-cols-4 gap-0 min-h-[280px]">
-            <div className="md:col-span-1 flex items-center justify-center bg-gray-800/50 min-h-[200px] md:min-h-0">
-              <SafeImage
-                src="/fixed-cadddy-pic.jpeg"
-                alt="Club Sport Caddy Competition Winner"
-                className="w-full h-full max-h-[320px] md:max-h-none object-contain object-center"
-              />
+          {/* Featured recent winner from API, if available */}
+          {featuredRecentWinner && (
+            <div className="mb-10 rounded-xl overflow-hidden border border-gray-700 bg-gradient-end grid grid-cols-1 md:grid-cols-4 gap-0 min-h-[280px]">
+              <div className="md:col-span-1 flex items-center justify-center bg-gray-800/50 min-h-[200px] md:min-h-0">
+                <SafeImage
+                  src={featuredRecentWinner.imageUrl}
+                  alt={featuredRecentWinner.message}
+                  className="w-full h-full max-h-[320px] md:max-h-none object-contain object-center"
+                />
+              </div>
+              <div className="md:col-span-3 flex flex-col items-center justify-center p-6 md:p-8 md:items-start">
+                <p className="text-lg md:text-xl text-white font-medium text-center md:text-left">
+                  {featuredRecentWinner.message}
+                </p>
+                <p className="text-text-secondary mt-2 text-center md:text-left">
+                  Ticket number:{' '}
+                  <span className="text-accent font-semibold">
+                    {featuredRecentWinner.ticketNumber}
+                  </span>
+                </p>
+                <p className="text-text-secondary mt-1 text-center md:text-left">
+                  Announced on {featuredRecentWinner.winDate}
+                </p>
+              </div>
             </div>
-            <div className="md:col-span-3 flex flex-col items-center justify-center p-6 md:p-8 md:items-start">
-              <p className="text-lg md:text-xl text-white font-medium text-center md:text-left">
-                Winner of Club Sport Caddy competition is Jack Ogg
-              </p>
-              <p className="text-text-secondary mt-2 text-center md:text-left">
-                Ticket number: <span className="text-accent font-semibold">3354</span>
-              </p>
-            </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {winnersLoading && <p className="text-text-secondary">Loading winners...</p>}
             {winnersError && <p className="text-red-500">Failed to load winners.</p>}
-            {!winnersLoading && !winnersError && recentWinners.map((winner, index) => <motion.div key={winner.id} initial={{
-            opacity: 0,
-            y: 20
-          }} animate={{
-            opacity: 1,
-            y: 0
-          }} transition={{
-            delay: index * 0.1
-          }} className="card-premium overflow-hidden group cursor-pointer">
+            {!winnersLoading && !winnersError && otherRecentWinners.map((winner, index) => (
+              <motion.div
+                key={winner.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="card-premium overflow-hidden group cursor-pointer"
+              >
                 <div className="relative h-48 overflow-hidden">
-                  <SafeImage src={winner.imageUrl} alt={winner.prize} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  <SafeImage
+                    src={winner.imageUrl}
+                    alt={winner.message}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4">
                     <div className="text-sm text-accent mb-1">
                       {winner.winDate}
                     </div>
-                    <div className="text-lg font-bold mb-1">{winner.name}</div>
+                    <div className="text-lg font-bold mb-1">
+                      {winner.message}
+                    </div>
                   </div>
                 </div>
                 <div className="p-5">
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm text-text-secondary mb-1">
-                        Prize Won
+                        Ticket Number
                       </div>
-                      <div className="font-semibold">{winner.prize}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-text-secondary mb-1">
-                        Value
-                      </div>
-                      <div className="text-xl font-bold text-accent">
-                        {winner.value}
+                      <div className="font-semibold">
+                        {winner.ticketNumber}
                       </div>
                     </div>
+                    {winner.value && (
+                      <div className="text-right">
+                        <div className="text-sm text-text-secondary mb-1">
+                          Value
+                        </div>
+                        <div className="text-xl font-bold text-accent">
+                          {winner.value}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </motion.div>)}
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>

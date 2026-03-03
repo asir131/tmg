@@ -50,37 +50,33 @@ export interface CompetitionTicketsResponse {
   };
 }
 
+export interface WinnerAnnouncement {
+  _id: string;
+  competition_name: string;
+  image_url: string;
+  message: string;
+  ticket_number: string;
+  announced_at: string;
+  createdAt: string;
+  updatedAt: string;
+  prize_value?: number;
+}
+
 export interface ResultsResponse {
   success: boolean;
   message: string;
   data: {
-    results: {
-      _id: string;
-      competition_id: {
-        _id: string;
-        title: string;
-        image_url: string;
-        slug: string;
+    recentWinners: WinnerAnnouncement[];
+    pastWinners: {
+      results: WinnerAnnouncement[];
+      pagination?: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+        hasNext: boolean;
+        hasPrev: boolean;
       };
-      user_id: {
-        _id: string;
-        name: string;
-        email: string;
-      };
-      ticket_number: string;
-      prize_value: number;
-      draw_video_url?: string;
-      draw_date: string;
-      createdAt: string;
-      updatedAt: string;
-    }[];
-    pagination?: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-      hasNext: boolean;
-      hasPrev: boolean;
     };
   };
 }
@@ -140,8 +136,16 @@ export const competitionsApi = api.injectEndpoints({
     getCompetitionTickets: builder.query<CompetitionTicketsResponse, { id: string; page?: number; limit?: number }>({
       query: ({ id, page = 1, limit = 10 }) => `tickets/competition/${id}?page=${page}&limit=${limit}`,
     }),
-    getResults: builder.query<ResultsResponse, { page?: number; limit?: number }>({
-      query: ({ page = 1, limit = 10 }) => `results?page=${page}&limit=${limit}`,
+    getResults: builder.query<ResultsResponse, { recent_limit?: number; past_page?: number; past_limit?: number } | void>({
+      query: (params) => {
+        const { recent_limit = 10, past_page = 1, past_limit = 10 } = params || {};
+        const queryParts = [
+          `recent_limit=${recent_limit}`,
+          `past_page=${past_page}`,
+          `past_limit=${past_limit}`,
+        ];
+        return `results?${queryParts.join("&")}`;
+      },
     }),
     getLiveStream: builder.query<LiveStreamResponse, void>({
       query: () => 'streams/live',
