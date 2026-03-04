@@ -1,5 +1,5 @@
 import { api } from './baseApi';
-import { CompetitionsResponse, CompetitionDetailsResponse, Category } from '../types';
+import { CompetitionsResponse, CompetitionDetailsResponse, Category, Competition } from '../types';
 
 export interface MyCompetitionEntry {
   _id: string;
@@ -117,14 +117,30 @@ export interface LiveStreamResponse {
   };
 }
 
+export interface FeaturedCompetitionsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    competitions: Competition[];
+  };
+}
+
 export const competitionsApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getCompetitions: builder.query<CompetitionsResponse, { page: number; limit: number; category_slug?: string; status?: string }>({
-      query: ({ page = 1, limit = 10, category_slug, status = 'active' }) => {
+    getFeaturedCompetitions: builder.query<FeaturedCompetitionsResponse, void>({
+      query: () => 'competitions/featured',
+    }),
+    getCompetitions: builder.query<
+      CompetitionsResponse,
+      { page: number; limit: number; category_slug?: string; status?: string; exclude_featured?: boolean }
+    >({
+      query: ({ page = 1, limit = 10, category_slug, status = 'active', exclude_featured }) => {
         if (category_slug) {
           return `competitions/by-category?category_slug=${category_slug}&status=${status}&page=${page}&limit=${limit}`;
         }
-        return `competitions?page=${page}&limit=${limit}`;
+        const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+        if (exclude_featured) params.set('exclude_featured', '1');
+        return `competitions?${params.toString()}`;
       },
     }),
     getCompetitionById: builder.query<CompetitionDetailsResponse, string>({
@@ -157,4 +173,13 @@ export const competitionsApi = api.injectEndpoints({
   }),
 });
 
-export const { useGetCompetitionsQuery, useGetCompetitionByIdQuery, useGetMyCompetitionsQuery, useGetCompetitionTicketsQuery, useGetResultsQuery, useGetLiveStreamQuery, useGetCategoriesQuery } = competitionsApi;
+export const {
+  useGetFeaturedCompetitionsQuery,
+  useGetCompetitionsQuery,
+  useGetCompetitionByIdQuery,
+  useGetMyCompetitionsQuery,
+  useGetCompetitionTicketsQuery,
+  useGetResultsQuery,
+  useGetLiveStreamQuery,
+  useGetCategoriesQuery,
+} = competitionsApi;

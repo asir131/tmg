@@ -1,14 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CompetitionCard } from '../components/CompetitionCard';
-import { motion } from 'framer-motion';
-import { ArrowRightIcon, TrophyIcon, CalendarIcon, TicketIcon, UsersIcon, GiftIcon, PoundSterlingIcon, CoinsIcon } from 'lucide-react';
-import { useGetCompetitionsQuery, useGetResultsQuery } from '../store/api/competitionsApi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRightIcon, TrophyIcon, CalendarIcon, TicketIcon, UsersIcon, GiftIcon, PoundSterlingIcon, CoinsIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { useGetFeaturedCompetitionsQuery, useGetCompetitionsQuery, useGetResultsQuery } from '../store/api/competitionsApi';
 import { SafeImage } from '../components/SafeImage';
 
 export function Home() {
   const navigate = useNavigate();
-  const { data: competitionsData, error, isLoading } = useGetCompetitionsQuery({ page: 1, limit: 3 });
+  const [featuredSlideIndex, setFeaturedSlideIndex] = useState(0);
+
+  const { data: featuredData } = useGetFeaturedCompetitionsQuery();
+  const featuredCompetitions = featuredData?.data?.competitions ?? [];
+
+  const { data: competitionsData, error, isLoading } = useGetCompetitionsQuery({
+    page: 1,
+    limit: 3,
+    exclude_featured: true,
+  });
   // Use combined winners endpoint: recent + past. Home only needs recent.
   const { data: winnersData, isLoading: winnersLoading, error: winnersError } = useGetResultsQuery({
     recent_limit: 4,
@@ -121,26 +130,112 @@ export function Home() {
           </motion.div>
         </div>
       </section>
-      {/* Featured Competitions */}
+      {/* Featured Competitions (hero slider) + rest in grid */}
       <section className="py-16">
         <div className="container-premium">
           <div className="flex justify-between items-center mb-10">
-            <h2 className="text-3xl font-bold">Featured Competitions</h2>
+            <h2 className="text-3xl font-bold">
+              {featuredCompetitions.length > 0 ? 'Featured Competitions' : 'Competitions'}
+            </h2>
             <Link to="/competitions" className="flex items-center text-white hover:text-accent transition-colors font-medium">
               View All <ArrowRightIcon className="w-4 h-4 ml-2" />
             </Link>
           </div>
+
+          {/* Featured slider: only when there are featured comps */}
+          {featuredCompetitions.length > 0 && (
+            <div className="mb-12">
+              <div className="relative rounded-2xl overflow-hidden border border-gray-700 bg-gradient-end">
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={featuredSlideIndex}
+                    initial={{ opacity: 0, x: 40 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -40 }}
+                    transition={{ duration: 0.3 }}
+                    className="min-h-[320px] md:min-h-[380px] grid grid-cols-1 md:grid-cols-2 gap-0"
+                  >
+                    <div className="relative h-64 md:h-auto min-h-[260px] md:min-h-[380px]">
+                      <SafeImage
+                        src={featuredCompetitions[featuredSlideIndex].image_url ?? ''}
+                        alt={featuredCompetitions[featuredSlideIndex].title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent md:from-black/40" />
+                    </div>
+                    <div className="flex flex-col justify-center p-6 md:p-10">
+                      <h3 className="text-2xl md:text-3xl font-bold mb-2 text-white">
+                        {featuredCompetitions[featuredSlideIndex].title}
+                      </h3>
+                      <p className="text-text-secondary line-clamp-2 mb-4">
+                        {featuredCompetitions[featuredSlideIndex].short_description}
+                      </p>
+                      <p className="text-accent font-semibold mb-4">
+                        £{Number(featuredCompetitions[featuredSlideIndex].ticket_price).toFixed(2)} per ticket
+                      </p>
+                      <Link
+                        to={`/competition/${featuredCompetitions[featuredSlideIndex]._id}`}
+                        className="btn-premium w-fit"
+                      >
+                        Enter Now
+                      </Link>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+
+                {featuredCompetitions.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFeaturedSlideIndex((i) => (i === 0 ? featuredCompetitions.length - 1 : i - 1))
+                      }
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors"
+                      aria-label="Previous"
+                    >
+                      <ChevronLeftIcon className="w-6 h-6" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFeaturedSlideIndex((i) => (i === featuredCompetitions.length - 1 ? 0 : i + 1))
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center text-white transition-colors"
+                      aria-label="Next"
+                    >
+                      <ChevronRightIcon className="w-6 h-6" />
+                    </button>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                      {featuredCompetitions.map((_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => setFeaturedSlideIndex(i)}
+                          className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                            i === featuredSlideIndex ? 'bg-accent' : 'bg-white/50 hover:bg-white/70'
+                          }`}
+                          aria-label={`Slide ${i + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Grid: non-featured competitions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {isLoading && <p>Loading competitions...</p>}
             {error && <p>Error fetching competitions.</p>}
-            {competitionsData && competitionsData.data.competitions.map(competition => (
+            {competitionsData && competitionsData.data.competitions.map((competition) => (
               <CompetitionCard
                 key={competition._id}
                 id={competition._id}
                 title={competition.title}
-                imageUrl={competition.image_url}
+                imageUrl={competition.image_url ?? ''}
                 price={competition.ticket_price}
-                endDate={new Date(competition.draw_countdown)}
+                endDate={new Date(competition.draw_countdown ?? competition.draw_time)}
                 totalTickets={competition.max_tickets}
                 soldTickets={competition.tickets_sold}
               />
