@@ -21,6 +21,8 @@ import { VerifyOtp } from './pages/VerifyOtp';
 import { VerifyEmail } from './pages/VerifyEmail';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
+import { AuthCallback } from './pages/AuthCallback';
+import { AuthError } from './pages/AuthError';
 import { PrivateRoute } from './components/PrivateRoute';
 
 export function App() {
@@ -36,6 +38,8 @@ export function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/auth/error" element={<AuthError />} />
           <Route path="/competitions" element={<AllCompetitions />} />
           <Route path="/competition/:id" element={<CompetitionDetails />} />
           <Route path="/winners" element={<Winners />} />

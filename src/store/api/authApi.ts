@@ -17,6 +17,15 @@ export interface VerifyOtpResponse {
   };
 }
 
+export interface GoogleAuthUrlResponse {
+  success: boolean;
+  message: string;
+  data: {
+    authUrl: string;
+    state: string;
+  };
+}
+
 export interface ForgotPasswordResponse {
   success: boolean;
   message: string;
@@ -91,16 +100,21 @@ export const authApi = api.injectEndpoints({
       query: () => 'user/profile',
       transformResponse: (response: { data: { user: User } }) => response.data.user,
     }),
+    getGoogleAuthUrl: builder.query<GoogleAuthUrlResponse['data'], void>({
+      query: () => ({ url: 'auth/google' }),
+      transformResponse: (response: GoogleAuthUrlResponse) => response.data,
+    }),
   }),
 });
 
-export const { 
-  useRegisterUserMutation, 
-  useLoginUserMutation, 
+export const {
+  useRegisterUserMutation,
+  useLoginUserMutation,
   useRefreshTokenMutation,
   useVerifyOtpMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
-  useLogoutUserMutation, 
-  useGetMeQuery 
+  useLogoutUserMutation,
+  useGetMeQuery,
+  useLazyGetGoogleAuthUrlQuery,
 } = authApi;
