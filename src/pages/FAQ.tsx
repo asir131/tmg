@@ -102,7 +102,12 @@ export function FAQ() {
             Can't find what you're looking for? Our support team is here to
             help.
           </p>
-          <button className="btn-premium">Contact Support</button>
+          <a
+            href="mailto:hello@tmgcompetitions.co.uk"
+            className="btn-premium inline-block"
+          >
+            Contact Support
+          </a>
         </motion.div>
       </div>
     </div>
