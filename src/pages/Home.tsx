@@ -182,6 +182,37 @@ export function Home() {
                               featuredCompetitions[featuredSlideIndex].draw_time
                             )}
                           />
+                          {typeof featuredCompetitions[featuredSlideIndex].max_tickets === 'number' && featuredCompetitions[featuredSlideIndex].max_tickets > 0 && (
+                            <div className="mt-3">
+                              <div className="flex justify-between text-sm mb-1">
+                                <span className="text-text-secondary">Competition Progress</span>
+                                <span className="font-bold">
+                                  {Math.min(
+                                    Math.round(
+                                      ((featuredCompetitions[featuredSlideIndex].tickets_sold ?? 0) /
+                                        featuredCompetitions[featuredSlideIndex].max_tickets) *
+                                        100
+                                    ),
+                                    100
+                                  )}
+                                  % Sold
+                                </span>
+                              </div>
+                              <div className="w-full h-2.5 bg-gradient-end rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-accent rounded-full transition-all duration-500"
+                                  style={{
+                                    width: `${Math.min(
+                                      (((featuredCompetitions[featuredSlideIndex].tickets_sold ?? 0) /
+                                        featuredCompetitions[featuredSlideIndex].max_tickets) *
+                                        100),
+                                      100
+                                    )}%`,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                       <Link

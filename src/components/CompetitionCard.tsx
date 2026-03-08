@@ -33,6 +33,24 @@ export function CompetitionCard({
         </h3>
         <div className="mb-4">
           <CountdownTimer endDate={endDate} />
+          {totalTickets > 0 && (
+            <div className="mt-3">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-text-secondary">Competition Progress</span>
+                <span className="font-bold">
+                  {Math.min(Math.round((soldTickets / totalTickets) * 100), 100)}% Sold
+                </span>
+              </div>
+              <div className="w-full h-2.5 bg-gradient-end rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-accent rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.min((soldTickets / totalTickets) * 100, 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
         <Link to={`/competition/${id}`} className="block w-full btn-premium text-center">
           Enter Now
