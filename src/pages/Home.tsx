@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CompetitionCard } from '../components/CompetitionCard';
+import { CountdownTimer } from '../components/CountdownTimer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRightIcon, TrophyIcon, CalendarIcon, TicketIcon, UsersIcon, GiftIcon, PoundSterlingIcon, CoinsIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { useGetFeaturedCompetitionsQuery, useGetCompetitionsQuery, useGetResultsQuery } from '../store/api/competitionsApi';
@@ -173,6 +174,16 @@ export function Home() {
                       <p className="text-accent font-semibold mb-4">
                         £{Number(featuredCompetitions[featuredSlideIndex].ticket_price).toFixed(2)} per ticket
                       </p>
+                      {(featuredCompetitions[featuredSlideIndex].draw_countdown || featuredCompetitions[featuredSlideIndex].draw_time) && (
+                        <div className="mb-4">
+                          <CountdownTimer
+                            endDate={new Date(
+                              featuredCompetitions[featuredSlideIndex].draw_countdown ??
+                              featuredCompetitions[featuredSlideIndex].draw_time
+                            )}
+                          />
+                        </div>
+                      )}
                       <Link
                         to={`/competition/${featuredCompetitions[featuredSlideIndex]._id}`}
                         className="btn-premium w-fit"
