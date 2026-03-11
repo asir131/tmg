@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  MinusIcon,
-  PlusIcon,
   ShoppingCartIcon,
   CreditCardIcon,
   ClockIcon,
@@ -30,7 +28,7 @@ import {
 export function CompetitionDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(10);
   const [activeTab, setActiveTab] = useState("details");
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [entryType, setEntryType] = useState<"online" | "postal">("online");
@@ -119,6 +117,16 @@ export function CompetitionDetails() {
       currency: 'GBP',
     });
   }, [competition?._id, competition?.title, competition?.ticket_price]);
+
+  // Clamp quantity when competition loads or limits change (slider min 10, max = as much as can buy)
+  useEffect(() => {
+    if (!competition) return;
+    const ticketsLeft = competition.max_tickets - competition.tickets_sold;
+    const maxTickets = Math.min(competition.max_per_person, ticketsLeft);
+    const minTickets = maxTickets < 10 ? 1 : 10;
+    const effectiveMax = Math.max(minTickets, maxTickets);
+    setQuantity((q) => Math.min(effectiveMax, Math.max(minTickets, q)));
+  }, [competition?.max_per_person, competition?.max_tickets, competition?.tickets_sold]);
 
   // Helper function to check if error is a wrong answer error
   const isWrongAnswerError = (error: any): boolean => {
@@ -653,106 +661,42 @@ export function CompetitionDetails() {
               <div className="card-premium p-6">
                 <h2 className="text-xl font-bold mb-6">Purchase Tickets</h2>
                 <div className="mb-6">
-                  <label className="text-sm text-text-secondary block mb-2">
-                    Number of Tickets
-                  </label>
-                  <div className="flex items-center justify-between bg-gradient-end rounded-xl p-2">
-                    <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-10 h-10 rounded-lg bg-gradient-start hover:bg-accent transition-colors flex items-center justify-center"
-                    >
-                      <MinusIcon className="w-5 h-5" />
-                    </button>
-                    <span className="text-2xl font-bold">{quantity}</span>
-                    <button
-                      onClick={() =>
-                        setQuantity(
-                          Math.min(competition.max_per_person, quantity + 1)
-                        )
-                      }
-                      className="w-10 h-10 rounded-lg bg-gradient-start hover:bg-accent transition-colors flex items-center justify-center"
-                    >
-                      <PlusIcon className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="text-xs text-text-secondary mt-1 text-center">
-                    Max {competition.max_per_person} tickets per person
-                  </div>
-                </div>
-                {/* Quick Select Card */}
-                <div className="mb-6">
-                  <label className="text-sm text-text-secondary block mb-2">
-                    Quick Select
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    {[20, 50, 80, 100].map((ticketCount) => {
-                      const isDisabled =
-                        ticketCount > competition.max_per_person;
-                      const isSelected = quantity === ticketCount;
-                      return (
-                        <button
-                          key={ticketCount}
-                          onClick={() => {
-                            if (!isDisabled) {
-                              setQuantity(
-                                Math.min(
-                                  ticketCount,
-                                  competition.max_per_person
-                                )
-                              );
-                            }
-                          }}
-                          disabled={isDisabled}
-                          className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                            isSelected
-                              ? "bg-accent text-white"
-                              : isDisabled
-                              ? "bg-gradient-end text-text-secondary opacity-50 cursor-not-allowed"
-                              : "bg-gradient-end hover:bg-gray-700 text-white border border-gray-700"
-                          }`}
-                        >
-                          {ticketCount}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {/* Custom Number Input */}
-                  <div>
-                    <label className="text-sm text-text-secondary block mb-2">
-                      Or enter custom number
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max={competition.max_per_person}
-                      value={quantity}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value, 10);
-                        if (!isNaN(value) && value >= 1) {
-                          setQuantity(
-                            Math.min(value, competition.max_per_person)
-                          );
-                        } else if (e.target.value === "") {
-                          setQuantity(1);
-                        }
-                      }}
-                      onBlur={(e) => {
-                        const value = parseInt(e.target.value, 10);
-                        if (isNaN(value) || value < 1) {
-                          setQuantity(1);
-                        } else if (value > competition.max_per_person) {
-                          setQuantity(competition.max_per_person);
-                        }
-                      }}
-                      className="w-full px-4 py-3 bg-gradient-end rounded-xl border border-gray-700 focus:border-accent focus:outline-none transition-colors text-center text-lg font-semibold"
-                      placeholder="Enter number"
-                    />
-                    {quantity > competition.max_per_person && (
-                      <p className="text-red-400 text-xs mt-1 text-center">
-                        Maximum {competition.max_per_person} tickets allowed
-                      </p>
-                    )}
-                  </div>
+                  {(() => {
+                    const ticketsLeft = competition.max_tickets - competition.tickets_sold;
+                    const maxTickets = Math.min(competition.max_per_person, ticketsLeft);
+                    const minTickets = maxTickets < 10 ? 1 : 10;
+                    const effectiveMax = Math.max(minTickets, maxTickets);
+                    return (
+                      <>
+                        <label className="text-sm text-text-secondary block mb-2">
+                          Number of Tickets
+                        </label>
+                        <div className="flex items-center gap-4">
+                          <span className="text-lg font-semibold w-10 shrink-0">{quantity}</span>
+                          <input
+                            type="range"
+                            min={minTickets}
+                            max={effectiveMax}
+                            value={quantity}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value, 10);
+                              if (!isNaN(value)) {
+                                setQuantity(Math.min(effectiveMax, Math.max(minTickets, value)));
+                              }
+                            }}
+                            className="flex-1 h-3 bg-gradient-end rounded-lg appearance-none cursor-pointer accent-accent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-0 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-accent [&::-moz-range-thumb]:border-0"
+                          />
+                          <span className="text-lg font-semibold w-10 shrink-0 text-right">{effectiveMax}</span>
+                        </div>
+                        <div className="text-xs text-text-secondary mt-1 text-center">
+                          You can buy up to {effectiveMax} tickets
+                          {effectiveMax < competition.max_per_person && (
+                            <span> ({competition.max_tickets - competition.tickets_sold} remaining)</span>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
                 <div className="space-y-3 mb-6 p-4 bg-gradient-end rounded-xl">
                   <div className="flex justify-between">
