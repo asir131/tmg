@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CompetitionCard } from '../components/CompetitionCard';
 import { CountdownTimer } from '../components/CountdownTimer';
+import { LiveActivityBar } from '../components/LiveActivityBar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRightIcon, TrophyIcon, CalendarIcon, TicketIcon, UsersIcon, GiftIcon, PoundSterlingIcon, CoinsIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { useGetFeaturedCompetitionsQuery, useGetCompetitionsQuery, useGetResultsQuery } from '../store/api/competitionsApi';
@@ -40,6 +41,7 @@ export function Home() {
   const [featuredRecentWinner, ...otherRecentWinners] = recentWinners;
 
   return <div>
+      <LiveActivityBar />
       {/* Hero Section */}
       <section className="relative h-[600px] overflow-hidden">
         <div className="absolute inset-0 z-0">
