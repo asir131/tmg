@@ -15,6 +15,7 @@ import { QuestionSection } from "../components/QuestionSection";
 import { SafeImage } from "../components/SafeImage";
 import { SinglePurchaseModal } from "../components/SinglePurchaseModal";
 import { CompetitionImageGallery } from "../components/CompetitionImageGallery";
+import { Slider } from "../components/ui/slider-number-flow";
 import { useGetCompetitionByIdQuery } from "../store/api/competitionsApi";
 import { useAddToCartMutation } from "../store/api/cartApi";
 import { useGetCompetitionFAQsQuery } from "../store/api/faqApi";
@@ -671,22 +672,18 @@ export function CompetitionDetails() {
                         <label className="text-sm text-text-secondary block mb-2">
                           Number of Tickets
                         </label>
-                        <div className="flex items-center gap-4">
-                          <span className="text-lg font-semibold w-10 shrink-0">{quantity}</span>
-                          <input
-                            type="range"
+                        <div className="flex items-center gap-3 pt-2 pb-6">
+                          <span className="text-sm text-text-secondary w-8 shrink-0 tabular-nums">{minTickets}</span>
+                          <Slider
+                            value={[quantity]}
+                            onValueChange={(v) => setQuantity(Math.min(effectiveMax, Math.max(minTickets, v[0] ?? minTickets)))}
                             min={minTickets}
                             max={effectiveMax}
-                            value={quantity}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value, 10);
-                              if (!isNaN(value)) {
-                                setQuantity(Math.min(effectiveMax, Math.max(minTickets, value)));
-                              }
-                            }}
-                            className="flex-1 h-3 bg-gradient-end rounded-lg appearance-none cursor-pointer accent-accent [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:border-0 [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-accent [&::-moz-range-thumb]:border-0"
+                            step={1}
+                            className="flex-1 min-w-0"
+                            aria-label="Ticket quantity"
                           />
-                          <span className="text-lg font-semibold w-10 shrink-0 text-right">{effectiveMax}</span>
+                          <span className="text-sm text-text-secondary w-8 shrink-0 text-right tabular-nums">{effectiveMax}</span>
                         </div>
                         <div className="text-xs text-text-secondary mt-1 text-center">
                           You can buy up to {effectiveMax} tickets
