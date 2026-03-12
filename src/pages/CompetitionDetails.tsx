@@ -119,13 +119,13 @@ export function CompetitionDetails() {
     });
   }, [competition?._id, competition?.title, competition?.ticket_price]);
 
-  // Clamp quantity when competition loads or limits change (slider min 10, max = as much as can buy)
+  // Clamp quantity when competition loads or limits change (slider min 1, max 1500)
   useEffect(() => {
     if (!competition) return;
     const ticketsLeft = competition.max_tickets - competition.tickets_sold;
     const maxTickets = Math.min(competition.max_per_person, ticketsLeft);
-    const minTickets = maxTickets < 10 ? 1 : 10;
-    const effectiveMax = Math.max(minTickets, maxTickets);
+    const minTickets = 1;
+    const effectiveMax = Math.min(1500, Math.max(minTickets, maxTickets));
     setQuantity((q) => Math.min(effectiveMax, Math.max(minTickets, q)));
   }, [competition?.max_per_person, competition?.max_tickets, competition?.tickets_sold]);
 
@@ -665,8 +665,8 @@ export function CompetitionDetails() {
                   {(() => {
                     const ticketsLeft = competition.max_tickets - competition.tickets_sold;
                     const maxTickets = Math.min(competition.max_per_person, ticketsLeft);
-                    const minTickets = maxTickets < 10 ? 1 : 10;
-                    const effectiveMax = Math.max(minTickets, maxTickets);
+                    const minTickets = 1;
+                    const effectiveMax = Math.min(1500, Math.max(minTickets, maxTickets));
                     return (
                       <>
                         <label className="text-sm text-text-secondary block mb-2">
@@ -684,6 +684,31 @@ export function CompetitionDetails() {
                             aria-label="Ticket quantity"
                           />
                           <span className="text-sm text-text-secondary w-8 shrink-0 text-right tabular-nums">{effectiveMax}</span>
+                          <input
+                            type="number"
+                            min={minTickets}
+                            max={effectiveMax}
+                            step={1}
+                            value={quantity}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              if (raw === "") {
+                                setQuantity(minTickets);
+                                return;
+                              }
+                              const n = parseInt(raw, 10);
+                              if (!Number.isNaN(n)) {
+                                const clamped = Math.min(effectiveMax, Math.max(minTickets, n));
+                                setQuantity(clamped);
+                              }
+                            }}
+                            onBlur={() => {
+                              const clamped = Math.min(effectiveMax, Math.max(minTickets, quantity));
+                              setQuantity(clamped);
+                            }}
+                            className="w-16 px-2 py-2 text-center bg-gradient-end rounded-xl border border-gray-700 focus:border-accent focus:outline-none transition-colors tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            aria-label="Ticket quantity (type number)"
+                          />
                         </div>
                         <div className="text-xs text-text-secondary mt-1 text-center">
                           You can buy up to {effectiveMax} tickets
