@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { TicketIcon } from 'lucide-react';
 import { useGetRecentActivityQuery } from '../store/api/recentActivityApi';
 
-const POLLING_INTERVAL_MS = 45000;
+const POLLING_INTERVAL_MS = 2000; // Poll every 2 seconds for live updates
 
 function formatMessage(firstName: string, location: string | null, ticketCount: number): string {
   const tickets = ticketCount === 1 ? '1 ticket' : `${ticketCount} tickets`;
