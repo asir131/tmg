@@ -58,38 +58,61 @@ export function LiveActivityBar() {
     </div>
   );
 
-  // Mobile layout: compact card with up to 3 stacked messages
-  const mobileMessages =
-    tickerContent.filter((m): m is string => !!m && m.trim().length > 0).slice(0, 3);
+  // Mobile layout: more visual, single primary message + subtle aggregate
+  const primaryMessage =
+    purchaseMessages.find((m): m is string => !!m && m.trim().length > 0) ??
+    (aggregateMessage as string | null);
+
+  const secondaryMessage =
+    aggregateMessage && aggregateMessage !== primaryMessage ? aggregateMessage : null;
 
   const mobileContent = (
     <div className="md:hidden px-4 pt-4">
       <div className="container-premium">
-        <div className="rounded-xl border border-white/10 bg-black/70 px-4 py-3 shadow-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/20">
-              <TicketIcon className="w-3 h-3 text-accent" aria-hidden />
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-black via-gray-900 to-black px-4 py-3 shadow-lg">
+          {/* Accent strip */}
+          <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-accent to-purple-500" />
+
+          <div className="pl-3 flex items-start gap-3">
+            <div className="mt-0.5 flex items-center justify-center w-7 h-7 rounded-full bg-accent/15 border border-accent/40">
+              <TicketIcon className="w-3.5 h-3.5 text-accent" aria-hidden />
             </div>
-            <span className="text-xs font-semibold uppercase tracking-wide text-accent">
-              Live activity
-            </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-0.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-accent">
+                  Live activity
+                </span>
+                {!isLoading && !isError && (
+                  <span className="text-[10px] text-white/60">Just now</span>
+                )}
+              </div>
+
+              {isLoading && (
+                <div className="text-xs text-white/70 animate-pulse">
+                  Checking what people are entering…
+                </div>
+              )}
+
+              {(isError || !primaryMessage) && !isLoading && (
+                <div className="text-xs text-white/85">
+                  No recent entries yet. Be the first to enter today.
+                </div>
+              )}
+
+              {!isLoading && primaryMessage && (
+                <>
+                  <div className="text-xs text-white font-medium leading-snug">
+                    {primaryMessage}
+                  </div>
+                  {secondaryMessage && (
+                    <div className="mt-0.5 text-[11px] text-white/70 leading-snug">
+                      {secondaryMessage}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
-          {isLoading && (
-            <div className="text-xs text-white/60 animate-pulse">Checking recent entries…</div>
-          )}
-          {(isError || mobileMessages.length === 0) && !isLoading && (
-            <div className="text-xs text-white/80">Be the first to enter today.</div>
-          )}
-          {!isLoading && mobileMessages.length > 0 && (
-            <ul className="space-y-1 text-xs text-white/90">
-              {mobileMessages.map((msg, i) => (
-                <li key={`${i}-${msg.slice(0, 20)}`} className="flex gap-2">
-                  <span className="mt-0.5 h-1 w-1 rounded-full bg-accent shrink-0" />
-                  <span className="leading-snug">{msg}</span>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
       </div>
     </div>
