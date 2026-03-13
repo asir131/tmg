@@ -66,7 +66,9 @@ export function LiveActivityBar() {
         {aggregateMessage && (
           <div className="shrink-0 text-sm text-white/95 hidden sm:block">{aggregateMessage}</div>
         )}
-        <div className="min-w-0 flex-1 overflow-hidden">
+
+        {/* Desktop / tablet: scrolling ticker as before */}
+        <div className="min-w-0 flex-1 overflow-hidden hidden sm:block">
           <div className="flex gap-8 text-sm text-white/95 whitespace-nowrap animate-ticker w-max">
             {tickerContent.map((msg, i) => (
               <span key={`${i}-${msg?.slice(0, 20)}`}>{msg}</span>
@@ -76,6 +78,13 @@ export function LiveActivityBar() {
                 {msg}
               </span>
             ))}
+          </div>
+        </div>
+
+        {/* Mobile: simple, single-line message (no horizontal scroll) */}
+        <div className="min-w-0 flex-1 sm:hidden">
+          <div className="text-xs text-white/95 truncate">
+            {tickerContent[0]}
           </div>
         </div>
       </div>
