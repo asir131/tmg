@@ -29,46 +29,20 @@ export function LiveActivityBar() {
     return { aggregateMessage: aggregate, purchaseMessages: purchases };
   }, [data]);
 
-  if (isLoading) {
-    return (
-      <div className="bg-black/80 text-white py-2 px-4 border-b border-white/10" role="region" aria-label="Live activity">
-        <div className="container-premium flex items-center gap-4">
-          <div className="flex items-center gap-2 shrink-0 text-accent">
-            <TicketIcon className="w-4 h-4" aria-hidden />
-            <span className="text-xs font-semibold uppercase tracking-wide">People are buying</span>
-          </div>
-          <div className="text-sm text-white/60 animate-pulse">Loading…</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (isError || (!aggregateMessage && purchaseMessages.length === 0)) {
-    return (
-      <div className="bg-black/80 text-white py-2 px-4 text-center text-sm border-b border-white/10" role="region" aria-label="Live activity">
-        <div className="container-premium flex items-center justify-center gap-2">
-          <TicketIcon className="w-4 h-4 text-accent shrink-0" aria-hidden />
-          <span className="opacity-90">Be the first to enter today.</span>
-        </div>
-      </div>
-    );
-  }
-
   const tickerContent = purchaseMessages.length > 0 ? purchaseMessages : [aggregateMessage];
 
-  return (
-    <div className="bg-black/80 text-white py-2 px-4 border-b border-white/10 overflow-hidden">
+  // Desktop / tablet layout: keep top bar with ticker
+  const desktopContent = (
+    <div className="hidden md:block bg-black/80 text-white py-2 px-4 border-b border-white/10 overflow-hidden">
       <div className="container-premium flex items-center gap-4">
         <div className="flex items-center gap-2 shrink-0 text-accent">
           <TicketIcon className="w-4 h-4" aria-hidden />
           <span className="text-xs font-semibold uppercase tracking-wide">People are buying</span>
         </div>
         {aggregateMessage && (
-          <div className="shrink-0 text-sm text-white/95 hidden sm:block">{aggregateMessage}</div>
+          <div className="shrink-0 text-sm text-white/95">{aggregateMessage}</div>
         )}
-
-        {/* Desktop / tablet: scrolling ticker as before */}
-        <div className="min-w-0 flex-1 overflow-hidden hidden sm:block">
+        <div className="min-w-0 flex-1 overflow-hidden">
           <div className="flex gap-8 text-sm text-white/95 whitespace-nowrap animate-ticker w-max">
             {tickerContent.map((msg, i) => (
               <span key={`${i}-${msg?.slice(0, 20)}`}>{msg}</span>
@@ -80,14 +54,51 @@ export function LiveActivityBar() {
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  );
 
-        {/* Mobile: simple, single-line message (no horizontal scroll) */}
-        <div className="min-w-0 flex-1 sm:hidden">
-          <div className="text-xs text-white/95 truncate">
-            {tickerContent[0]}
+  // Mobile layout: compact card with up to 3 stacked messages
+  const mobileMessages =
+    tickerContent.filter((m): m is string => !!m && m.trim().length > 0).slice(0, 3);
+
+  const mobileContent = (
+    <div className="md:hidden px-4 pt-4">
+      <div className="container-premium">
+        <div className="rounded-xl border border-white/10 bg-black/70 px-4 py-3 shadow-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-accent/20">
+              <TicketIcon className="w-3 h-3 text-accent" aria-hidden />
+            </div>
+            <span className="text-xs font-semibold uppercase tracking-wide text-accent">
+              Live activity
+            </span>
           </div>
+          {isLoading && (
+            <div className="text-xs text-white/60 animate-pulse">Checking recent entries…</div>
+          )}
+          {(isError || mobileMessages.length === 0) && !isLoading && (
+            <div className="text-xs text-white/80">Be the first to enter today.</div>
+          )}
+          {!isLoading && mobileMessages.length > 0 && (
+            <ul className="space-y-1 text-xs text-white/90">
+              {mobileMessages.map((msg, i) => (
+                <li key={`${i}-${msg.slice(0, 20)}`} className="flex gap-2">
+                  <span className="mt-0.5 h-1 w-1 rounded-full bg-accent shrink-0" />
+                  <span className="leading-snug">{msg}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {mobileContent}
+      {desktopContent}
+    </>
   );
 }
