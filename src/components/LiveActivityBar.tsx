@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { TicketIcon } from 'lucide-react';
 import { useGetRecentActivityQuery } from '../store/api/recentActivityApi';
 
 const POLLING_INTERVAL_MS = 2000; // Poll every 2 seconds for live updates
+const MOBILE_ROTATION_MS = 2500; // Rotate displayed message on mobile every 2.5s
 
 function formatMessage(firstName: string, location: string | null, ticketCount: number): string {
   const tickets = ticketCount === 1 ? '1 ticket' : `${ticketCount} tickets`;
@@ -31,6 +32,25 @@ export function LiveActivityBar() {
 
   const tickerContent = purchaseMessages.length > 0 ? purchaseMessages : [aggregateMessage];
 
+  // On mobile: rotate through messages so the displayed line changes every few seconds
+  const mobileMessageList = purchaseMessages.length > 0
+    ? purchaseMessages
+    : (aggregateMessage ? [aggregateMessage] : []);
+  const [mobileRotationIndex, setMobileRotationIndex] = useState(0);
+
+  useEffect(() => {
+    if (mobileMessageList.length <= 1) return;
+    const id = setInterval(() => {
+      setMobileRotationIndex((i) => (i + 1) % mobileMessageList.length);
+    }, MOBILE_ROTATION_MS);
+    return () => clearInterval(id);
+  }, [mobileMessageList.length]);
+
+  const displayedMobileMessage =
+    mobileMessageList.length > 0
+      ? mobileMessageList[mobileRotationIndex % mobileMessageList.length]
+      : null;
+
   // Desktop / tablet layout: keep top bar with ticker
   const desktopContent = (
     <div className="hidden md:block bg-black/80 text-white py-2 px-4 border-b border-white/10 overflow-hidden">
@@ -58,14 +78,7 @@ export function LiveActivityBar() {
     </div>
   );
 
-  // Mobile layout: more visual, single primary message + subtle aggregate
-  const primaryMessage =
-    purchaseMessages.find((m): m is string => !!m && m.trim().length > 0) ??
-    (aggregateMessage as string | null);
-
-  const secondaryMessage =
-    aggregateMessage && aggregateMessage !== primaryMessage ? aggregateMessage : null;
-
+  // Mobile layout: rotating message + optional aggregate line
   const mobileContent = (
     <div className="md:hidden px-4 pt-4">
       <div className="container-premium">
@@ -93,20 +106,20 @@ export function LiveActivityBar() {
                 </div>
               )}
 
-              {(isError || !primaryMessage) && !isLoading && (
+              {(isError || !displayedMobileMessage) && !isLoading && (
                 <div className="text-xs text-white/85">
                   No recent entries yet. Be the first to enter today.
                 </div>
               )}
 
-              {!isLoading && primaryMessage && (
+              {!isLoading && displayedMobileMessage && (
                 <>
                   <div className="text-xs text-white font-medium leading-snug">
-                    {primaryMessage}
+                    {displayedMobileMessage}
                   </div>
-                  {secondaryMessage && (
+                  {aggregateMessage && purchaseMessages.length > 0 && (
                     <div className="mt-0.5 text-[11px] text-white/70 leading-snug">
-                      {secondaryMessage}
+                      {aggregateMessage}
                     </div>
                   )}
                 </>
