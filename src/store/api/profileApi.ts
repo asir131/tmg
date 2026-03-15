@@ -6,6 +6,7 @@ type ProfileUser = User & {
   profile_image?: string | null;
   phone_number?: string | null;
   location?: string | null;
+  postcode?: string | null;
   total_points?: number;
   total_earned?: number;
   total_spent?: number;

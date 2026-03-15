@@ -42,6 +42,24 @@ export const normalizePhoneNumber = (phone: string): string => {
 };
 
 /**
+ * Returns true if the UK number is Northern Ireland (+44 28...)
+ */
+export const isNorthernIrelandPhone = (phone: string): boolean => {
+  if (!phone) return false;
+  const digits = phone.replace(/\s/g, '').replace(/^\+44/, '').replace(/^0/, '');
+  return digits.length >= 2 && digits.startsWith('28');
+};
+
+/**
+ * Returns true if postcode is a valid BT (Northern Ireland) postcode
+ */
+export const isValidBTPostcode = (postcode: string): boolean => {
+  if (!postcode || !postcode.trim()) return false;
+  const normalized = postcode.trim().toUpperCase();
+  return /^BT\d/.test(normalized);
+};
+
+/**
  * Auto-formats phone number as user types
  * Converts 07123456789 to +447123456789
  */

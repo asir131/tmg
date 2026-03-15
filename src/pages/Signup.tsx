@@ -6,7 +6,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useRegisterUserMutation, useLazyGetGoogleAuthUrlQuery } from '../store/api/authApi';
 import { PhoneNumberInput } from '../components/PhoneNumberInput';
-import { validateUKPhoneNumber, normalizePhoneNumber } from '../utils/phoneValidation';
+import { validateUKPhoneNumber, normalizePhoneNumber, isNorthernIrelandPhone, isValidBTPostcode } from '../utils/phoneValidation';
 
 export function Signup() {
   const [formData, setFormData] = useState({
@@ -15,14 +15,18 @@ export function Signup() {
     email: '',
     password: '',
     confirmPassword: '',
-    phone_number: ''  // Added phone_number field
+    phone_number: '',
+    postcode: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [apiErrorMessage, setApiErrorMessage] = useState<any>(null);
   const [phoneError, setPhoneError] = useState<string>('');
+  const [postcodeError, setPostcodeError] = useState<string>('');
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+
+  const isNiPhone = isNorthernIrelandPhone(formData.phone_number);
   
   const navigate = useNavigate();
   const [registerUser, { isLoading }] = useRegisterUserMutation();
@@ -42,8 +46,9 @@ export function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setApiErrorMessage(null); // Clear previous errors
-    setPhoneError(''); // Clear phone error
+    setApiErrorMessage(null);
+    setPhoneError('');
+    setPostcodeError('');
 
     if (formData.password !== formData.confirmPassword) {
       setApiErrorMessage("Passwords do not match!");
@@ -54,7 +59,6 @@ export function Signup() {
       return;
     }
 
-    // Validate phone number
     if (!formData.phone_number) {
       setPhoneError('Phone number is required');
       return;
@@ -66,13 +70,25 @@ export function Signup() {
       return;
     }
 
+    if (isNiPhone) {
+      if (!formData.postcode || !formData.postcode.trim()) {
+        setPostcodeError('Northern Ireland requires a BT postcode');
+        return;
+      }
+      if (!isValidBTPostcode(formData.postcode)) {
+        setPostcodeError('Please enter a valid BT postcode (e.g. BT1 1AA)');
+        return;
+      }
+    }
+
     try {
       const response = await registerUser({
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
         password: formData.password,
-        phone_number: normalizedPhone  // Added phone_number to registration
+        phone_number: normalizedPhone,
+        ...(isNiPhone && formData.postcode?.trim() ? { postcode: formData.postcode.trim() } : {}),
       }).unwrap();
       
       if(response.data.accessToken && response.data.refreshToken) {
@@ -186,12 +202,29 @@ export function Signup() {
                   value={formData.phone_number}
                   onChange={(value) => {
                     setFormData({ ...formData, phone_number: value });
-                    setPhoneError(''); // Clear error when user types
+                    setPhoneError('');
+                    setPostcodeError('');
                   }}
                   error={phoneError}
                   required={true}
                 />
               </div>
+              {isNiPhone && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Post Code (Northern Ireland) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="postcode"
+                    value={formData.postcode}
+                    onChange={handleChange}
+                    placeholder="e.g. BT1 1AA"
+                    className="w-full px-4 py-3 bg-gradient-end rounded-xl border border-gray-700 focus:border-accent focus:outline-none transition-colors"
+                  />
+                  {postcodeError && <span className="text-red-500 text-sm mt-1 block">{postcodeError}</span>}
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium mb-2">
                   Password

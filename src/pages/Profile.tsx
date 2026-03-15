@@ -18,7 +18,7 @@ import {
 } from "../store/api/profileApi";
 import { useLogoutUserMutation } from "../store/api/authApi";
 import { PhoneNumberInput } from "../components/PhoneNumberInput";
-import { validateUKPhoneNumber, normalizePhoneNumber } from "../utils/phoneValidation";
+import { validateUKPhoneNumber, normalizePhoneNumber, isNorthernIrelandPhone, isValidBTPostcode } from "../utils/phoneValidation";
 
 export function Profile() {
   const [activeSection, setActiveSection] = useState("account");
@@ -71,14 +71,18 @@ export function Profile() {
   const [email, setEmail] = useState("john.doe@example.com");
   const [phone, setPhone] = useState("+44 7700 900000");
   const [address, setAddress] = useState("123 Competition Street, London, UK");
+  const [postcode, setPostcode] = useState("");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string>('');
+  const [postcodeError, setPostcodeError] = useState<string>('');
 
   const menuItems = [
     { id: "account", label: "Account Info", icon: UserIcon },
     { id: "points", label: "Points & Rewards", icon: CreditCardIcon },
     { id: "tickets", label: "Purchase History", icon: TicketIcon },
   ];
+
+  const isNiPhone = isNorthernIrelandPhone(phone);
 
   // Seed form state from profile when it loads
   useEffect(() => {
@@ -88,6 +92,7 @@ export function Profile() {
     setEmail(profile?.email ?? "john.doe@example.com");
     setPhone(profile?.phone_number ?? "+44 7700 900000");
     setAddress(profile?.location ?? "123 Competition Street, London, UK");
+    setPostcode(profile?.postcode ?? "");
   }, [profile]);
 
   const totalEarnedPoints = pointsSummary?.total_earned ?? 0;
@@ -130,14 +135,15 @@ export function Profile() {
     if (!isEditing) {
       setStatusMessage(null);
       setPhoneError('');
+      setPostcodeError('');
       setIsEditing(true);
       return;
     }
-    
+
     setStatusMessage(null);
     setPhoneError('');
-    
-    // Phone number is optional for updates, but if provided, must be valid
+    setPostcodeError('');
+
     if (phone && phone.trim()) {
       const normalizedPhone = normalizePhoneNumber(phone);
       if (!validateUKPhoneNumber(normalizedPhone)) {
@@ -145,7 +151,18 @@ export function Profile() {
         return;
       }
     }
-    
+
+    if (isNiPhone && postcode !== undefined) {
+      if (!postcode || !postcode.trim()) {
+        setPostcodeError('Northern Ireland requires a BT postcode');
+        return;
+      }
+      if (!isValidBTPostcode(postcode)) {
+        setPostcodeError('Please enter a valid BT postcode (e.g. BT1 1AA)');
+        return;
+      }
+    }
+
     const name = `${firstName} ${lastName}`.trim();
     try {
       await updateProfile({
@@ -153,6 +170,7 @@ export function Profile() {
         email,
         phone_number: phone && phone.trim() ? normalizePhoneNumber(phone) : null,
         location: address,
+        ...(postcode !== undefined ? { postcode: postcode && postcode.trim() ? postcode.trim() : null } : {}),
       }).unwrap();
       setIsEditing(false);
       setStatusMessage("Profile updated successfully.");
@@ -365,6 +383,25 @@ export function Profile() {
                       className="w-full px-4 py-3 bg-gradient-end rounded-xl border border-gray-700"
                     />
                   </div>
+                  {isNiPhone && (
+                    <div>
+                      <label className="block text-sm text-text-secondary mb-2">
+                        Post Code (Northern Ireland)
+                      </label>
+                      <input
+                        type="text"
+                        value={postcode}
+                        onChange={(e) => {
+                          setPostcode(e.target.value);
+                          setPostcodeError('');
+                        }}
+                        readOnly={!isEditing}
+                        placeholder="e.g. BT1 1AA"
+                        className="w-full px-4 py-3 bg-gradient-end rounded-xl border border-gray-700"
+                      />
+                      {postcodeError && <span className="text-red-500 text-sm mt-1 block">{postcodeError}</span>}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
