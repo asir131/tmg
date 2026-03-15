@@ -5,11 +5,8 @@ import { useGetRecentActivityQuery } from '../store/api/recentActivityApi';
 const POLLING_INTERVAL_MS = 2000; // Poll every 2 seconds for live updates
 const MOBILE_ROTATION_MS = 2500; // Rotate displayed message on mobile every 2.5s
 
-function formatMessage(firstName: string, location: string | null, ticketCount: number): string {
+function formatMessage(firstName: string, ticketCount: number): string {
   const tickets = ticketCount === 1 ? '1 ticket' : `${ticketCount} tickets`;
-  if (location) {
-    return `${firstName} from ${location} just bought ${tickets}`;
-  }
   return `${firstName} just bought ${tickets}`;
 }
 
@@ -26,7 +23,7 @@ export function LiveActivityBar() {
         : null;
     const purchases = data.recent_purchases
       .filter((p) => p.ticket_count > 0)
-      .map((p) => formatMessage(p.first_name, p.location, p.ticket_count));
+      .map((p) => formatMessage(p.first_name, p.ticket_count));
     return { aggregateMessage: aggregate, purchaseMessages: purchases };
   }, [data]);
 

@@ -2,7 +2,6 @@ import { api } from './baseApi';
 
 export interface RecentPurchase {
   first_name: string;
-  location: string | null;
   ticket_count: number;
   minutes_ago: number;
 }
