@@ -6,7 +6,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useRegisterUserMutation, useLazyGetGoogleAuthUrlQuery } from '../store/api/authApi';
 import { PhoneNumberInput } from '../components/PhoneNumberInput';
-import { validateUKPhoneNumber, normalizePhoneNumber, isNorthernIrelandPhone, isValidBTPostcode } from '../utils/phoneValidation';
+import { validateUKPhoneNumber, validateIrishPhoneNumber, normalizePhoneNumber, phoneRequiresPostcode, isValidBTPostcode } from '../utils/phoneValidation';
 
 export function Signup() {
   const [formData, setFormData] = useState({
@@ -26,8 +26,8 @@ export function Signup() {
   const [postcodeError, setPostcodeError] = useState<string>('');
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
-  const isNiPhone = isNorthernIrelandPhone(formData.phone_number);
-  
+  const needsPostcode = phoneRequiresPostcode(formData.phone_number);
+
   const navigate = useNavigate();
   const [registerUser, { isLoading }] = useRegisterUserMutation();
   const [getGoogleAuthUrl, { isLoading: isGoogleLoading }] = useLazyGetGoogleAuthUrlQuery();
@@ -65,14 +65,22 @@ export function Signup() {
     }
 
     const normalizedPhone = normalizePhoneNumber(formData.phone_number);
-    if (!validateUKPhoneNumber(normalizedPhone)) {
-      setPhoneError('Please enter a valid UK phone number (10 digits)');
-      return;
+    const isIrish = normalizedPhone.startsWith('+353');
+    if (isIrish) {
+      if (!validateIrishPhoneNumber(normalizedPhone)) {
+        setPhoneError('Please enter a valid Ireland phone number (9 digits after +353)');
+        return;
+      }
+    } else {
+      if (!validateUKPhoneNumber(normalizedPhone)) {
+        setPhoneError('Please enter a valid UK phone number (10 digits)');
+        return;
+      }
     }
 
-    if (isNiPhone) {
+    if (needsPostcode) {
       if (!formData.postcode || !formData.postcode.trim()) {
-        setPostcodeError('Northern Ireland requires a BT postcode');
+        setPostcodeError('A valid BT postcode is required to purchase tickets');
         return;
       }
       if (!isValidBTPostcode(formData.postcode)) {
@@ -88,7 +96,7 @@ export function Signup() {
         email: formData.email,
         password: formData.password,
         phone_number: normalizedPhone,
-        ...(isNiPhone && formData.postcode?.trim() ? { postcode: formData.postcode.trim() } : {}),
+        ...(needsPostcode && formData.postcode?.trim() ? { postcode: formData.postcode.trim() } : {}),
       }).unwrap();
       
       if(response.data.accessToken && response.data.refreshToken) {
@@ -209,10 +217,10 @@ export function Signup() {
                   required={true}
                 />
               </div>
-              {isNiPhone && (
+              {needsPostcode && (
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Post Code (Northern Ireland) <span className="text-red-500">*</span>
+                    Post Code (BT required for purchase) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"

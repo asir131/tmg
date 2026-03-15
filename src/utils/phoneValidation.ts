@@ -4,14 +4,35 @@
  */
 export const validateUKPhoneNumber = (phone: string): boolean => {
   if (!phone) return false;
-  
-  // Remove spaces
   const cleaned = phone.replace(/\s/g, '');
-  
-  // UK phone pattern: +44 prefix, followed by 10 digits starting with 7
   const ukPhonePattern = /^\+44[1-9]\d{9}$/;
-  
   return ukPhonePattern.test(cleaned);
+};
+
+/**
+ * Validates Ireland phone number format
+ * Accepts: +353 1 234 5678 (9 digits after +353)
+ */
+export const validateIrishPhoneNumber = (phone: string): boolean => {
+  if (!phone) return false;
+  const cleaned = phone.replace(/\s/g, '');
+  return /^\+353[1-9]\d{8}$/.test(cleaned);
+};
+
+/**
+ * Returns true if the number is Irish (+353...)
+ */
+export const isIrishPhone = (phone: string): boolean => {
+  if (!phone) return false;
+  const cleaned = phone.replace(/\s/g, '');
+  return cleaned.startsWith('+353');
+};
+
+/**
+ * Returns true if postcode is required (Ireland or NI +44 28) and thus must be BT for purchase
+ */
+export const phoneRequiresPostcode = (phone: string): boolean => {
+  return isIrishPhone(phone) || isNorthernIrelandPhone(phone);
 };
 
 /**
@@ -19,18 +40,21 @@ export const validateUKPhoneNumber = (phone: string): boolean => {
  */
 export const formatPhoneNumber = (phone: string | null): string => {
   if (!phone) return 'Not provided';
-  
-  // Format: +44 7123 456789
+
   if (phone.startsWith('+44')) {
     const number = phone.substring(3);
     return `+44 ${number.substring(0, 4)} ${number.substring(4)}`;
   }
-  
-  // Format: 07123 456789
+
+  if (phone.startsWith('+353')) {
+    const number = phone.substring(4);
+    return `+353 ${number.substring(0, 2)} ${number.substring(2, 5)} ${number.substring(5)}`;
+  }
+
   if (phone.startsWith('0')) {
     return `${phone.substring(0, 5)} ${phone.substring(5)}`;
   }
-  
+
   return phone;
 };
 

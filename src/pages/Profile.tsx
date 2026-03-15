@@ -18,7 +18,7 @@ import {
 } from "../store/api/profileApi";
 import { useLogoutUserMutation } from "../store/api/authApi";
 import { PhoneNumberInput } from "../components/PhoneNumberInput";
-import { validateUKPhoneNumber, normalizePhoneNumber, isNorthernIrelandPhone, isValidBTPostcode } from "../utils/phoneValidation";
+import { validateUKPhoneNumber, validateIrishPhoneNumber, normalizePhoneNumber, phoneRequiresPostcode, isValidBTPostcode } from "../utils/phoneValidation";
 
 export function Profile() {
   const [activeSection, setActiveSection] = useState("account");
@@ -82,7 +82,7 @@ export function Profile() {
     { id: "tickets", label: "Purchase History", icon: TicketIcon },
   ];
 
-  const isNiPhone = isNorthernIrelandPhone(phone);
+  const needsPostcode = phoneRequiresPostcode(phone);
 
   // Seed form state from profile when it loads
   useEffect(() => {
@@ -146,15 +146,22 @@ export function Profile() {
 
     if (phone && phone.trim()) {
       const normalizedPhone = normalizePhoneNumber(phone);
-      if (!validateUKPhoneNumber(normalizedPhone)) {
-        setPhoneError('Please enter a valid UK phone number');
-        return;
+      if (normalizedPhone.startsWith('+353')) {
+        if (!validateIrishPhoneNumber(normalizedPhone)) {
+          setPhoneError('Please enter a valid Ireland phone number (9 digits after +353)');
+          return;
+        }
+      } else {
+        if (!validateUKPhoneNumber(normalizedPhone)) {
+          setPhoneError('Please enter a valid UK phone number');
+          return;
+        }
       }
     }
 
-    if (isNiPhone && postcode !== undefined) {
+    if (needsPostcode && postcode !== undefined) {
       if (!postcode || !postcode.trim()) {
-        setPostcodeError('Northern Ireland requires a BT postcode');
+        setPostcodeError('A valid BT postcode is required to purchase tickets');
         return;
       }
       if (!isValidBTPostcode(postcode)) {
@@ -383,10 +390,10 @@ export function Profile() {
                       className="w-full px-4 py-3 bg-gradient-end rounded-xl border border-gray-700"
                     />
                   </div>
-                  {isNiPhone && (
+                  {needsPostcode && (
                     <div>
                       <label className="block text-sm text-text-secondary mb-2">
-                        Post Code (Northern Ireland)
+                        Post Code (BT required for purchase)
                       </label>
                       <input
                         type="text"
